@@ -1,0 +1,3656 @@
+{
+  "schema_version": 1,
+  "title": "X-FORGE Docker property-output registry",
+  "description": "Human-readable registry of every property listed in starting_text.txt. Property identifiers remain under their producing model. Only direct measurements or defensible mechanistic proxies participate in the two shared MOO objectives; safety and developability liabilities are constraints instead.",
+  "registry_semantics": {
+    "classifier_values": "Unless a model entry says otherwise, a classifier value is the probability of the named positive class. A 0.5 cutoff is a screening default, not a clinical safety guarantee.",
+    "regression_values": "Regression units are model-specific. Normalize within each property before combining models; never average raw logS, logP, kcal/mol, percent, or clearance.",
+    "context_matters": "BBB penetration, half-life, clearance, volume of distribution, and kinase activity can be desirable or undesirable depending on the therapeutic program.",
+    "evidence_limit": "These are computational predictions and descriptors. Thresholds are early-stage gates that require experimental confirmation and applicability-domain checks."
+  },
+  "threshold_profiles": {
+    "adverse_probability": {
+      "pass": {
+        "operator": "<=",
+        "value": 0.5
+      },
+      "note": "Default gate for probabilities where the positive class is an adverse event."
+    },
+    "favorable_probability": {
+      "pass": {
+        "operator": ">=",
+        "value": 0.5
+      },
+      "note": "Default gate for probabilities where the positive class is desirable."
+    },
+    "native_nontoxic_binary": {
+      "pass": {
+        "operator": "==",
+        "value": 0
+      },
+      "note": "CToxPred defines 0 as non-toxic and 1 as toxic."
+    },
+    "molecular_weight_oral": {
+      "pass": {
+        "operator": "<=",
+        "value": 500,
+        "unit": "Da"
+      },
+      "note": "Lipinski-style early oral-drug screen; not a universal modality limit."
+    },
+    "hba_oral": {
+      "pass": {
+        "operator": "<=",
+        "value": 10,
+        "unit": "count"
+      }
+    },
+    "hbd_oral": {
+      "pass": {
+        "operator": "<=",
+        "value": 5,
+        "unit": "count"
+      }
+    },
+    "tpsa_oral": {
+      "pass": {
+        "operator": "<=",
+        "value": 140,
+        "unit": "angstrom^2"
+      }
+    },
+    "rotatable_bonds_oral": {
+      "pass": {
+        "operator": "<=",
+        "value": 10,
+        "unit": "count"
+      }
+    },
+    "qed_druglike": {
+      "pass": {
+        "operator": ">=",
+        "value": 0.5
+      },
+      "note": "A practical project default, not a formal regulatory cutoff."
+    },
+    "ld50_low_concern": {
+      "derived_value": "1000 * molecular_weight_Da * 10^(-LD50_Zhu)",
+      "derived_unit": "mg/kg",
+      "pass": {
+        "operator": ">",
+        "value": 2000,
+        "unit": "mg/kg"
+      },
+      "note": "Converts ADMET-AI's log10(1/(mol/kg)) prediction to mass dose and applies the GHS boundary above Category 4. Use only as a rat acute-oral screen."
+    }
+  },
+  "moo_objectives": {
+    "lipophilicity": {
+      "strategy": "target_window",
+      "recommended_default_window": {
+        "minimum": 1.0,
+        "maximum": 3.0,
+        "unit": "log10_ratio"
+      },
+      "note": "Lipophilicity is not \"more is better.\" Normalize each direct logP/logD-like estimate, reward a project-configurable window, and avoid overweighting a molecule merely because several models estimate the same endpoint.",
+      "members": [
+        {
+          "model": "Admet-AI",
+          "property": "logP",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "Admet-AI",
+          "property": "Lipophilicity_AstraZeneca",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "Admetica",
+          "property": "lipophilicity",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "Admethyst",
+          "property": "Lipophilicity_AstraZeneca",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "BoiledEgg",
+          "property": "WLogP",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "LogPPrepML",
+          "property": "ML_LogP_NN",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "LogPPrepML",
+          "property": "ML_LogP_Ridge",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "ClassicalGSG",
+          "property": "LogP_MMFF",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "ClassicalGSG",
+          "property": "LogP_CGenFF",
+          "role": "direct_estimate"
+        },
+        {
+          "model": "MolProperty",
+          "property": "logP",
+          "role": "direct_estimate"
+        }
+      ]
+    },
+    "solubility": {
+      "strategy": "maximize_after_unit_normalization",
+      "note": "Direct logS predictions carry full weight. Hydration free energy is a mechanistic proxy and must carry lower weight because crystal-lattice energy, ionization, pH, temperature, and solid form also control measured solubility.",
+      "members": [
+        {
+          "model": "Admet-AI",
+          "property": "Solubility_AqSolDB",
+          "role": "direct_logS",
+          "transform": "identity",
+          "weight": 1.0
+        },
+        {
+          "model": "Admet-AI",
+          "property": "HydrationFreeEnergy_FreeSolv",
+          "role": "hydration_proxy",
+          "transform": "negate",
+          "weight": 0.5
+        },
+        {
+          "model": "Admetica",
+          "property": "solubility",
+          "role": "direct_logS",
+          "transform": "identity",
+          "weight": 1.0
+        },
+        {
+          "model": "Admethyst",
+          "property": "Solubility_AqSolDB",
+          "role": "direct_logS",
+          "transform": "identity",
+          "weight": 1.0
+        },
+        {
+          "model": "Admethyst",
+          "property": "HydrationFreeEnergy_FreeSolv",
+          "role": "hydration_proxy",
+          "transform": "negate",
+          "weight": 0.5
+        },
+        {
+          "model": "MolProperty",
+          "property": "logS",
+          "role": "direct_logS",
+          "transform": "identity",
+          "weight": 1.0
+        }
+      ],
+      "hydration_relationship": "More-negative hydration free energy means more favorable transfer from gas to water. Therefore -HydrationFreeEnergy_FreeSolv increases with favorable hydration and is positively associated with solubility, but is not directly proportional to total aqueous solubility."
+    }
+  },
+  "sources": {
+    "admet_ai_metadata": {
+      "name": "ADMET-AI v2 property metadata",
+      "url": "https://raw.githubusercontent.com/swansonk14/admet_ai/main/admet_ai/resources/data/admet.csv"
+    },
+    "admet_ai_physchem": {
+      "name": "ADMET-AI v2 RDKit physicochemical implementation",
+      "url": "https://github.com/swansonk14/admet_ai/blob/main/admet_ai/physchem.py"
+    },
+    "tdc": {
+      "name": "Therapeutics Data Commons ADMET datasets",
+      "url": "https://tdcommons.ai/single_pred_tasks/adme/"
+    },
+    "tdc_tox": {
+      "name": "Therapeutics Data Commons toxicity datasets",
+      "url": "https://tdcommons.ai/single_pred_tasks/tox/"
+    },
+    "admetica": {
+      "name": "Admetica training-dataset documentation",
+      "url": "https://github.com/datagrok-ai/admetica/blob/main/docs/datasets.md"
+    },
+    "admethyst": {
+      "name": "ADMEThyst repository; its listed features are ADMET-AI-derived",
+      "url": "https://github.com/souhridm/ADMEThyst"
+    },
+    "boiled_egg": {
+      "name": "BOILED-Egg paper",
+      "url": "https://doi.org/10.1002/cmdc.201600182"
+    },
+    "ctoxpred": {
+      "name": "CToxPred repository and native binary-output implementation",
+      "url": "https://github.com/issararab/CToxPred"
+    },
+    "classical_gsg": {
+      "name": "ClassicalGSG logP publication and implementation",
+      "url": "https://doi.org/10.1021/acs.jcim.0c01307"
+    },
+    "rdkit": {
+      "name": "RDKit descriptor documentation",
+      "url": "https://www.rdkit.org/docs/GettingStartedInPython.html#descriptor-calculation"
+    },
+    "ghs_acute_toxicity": {
+      "name": "UN GHS acute-toxicity criteria",
+      "url": "https://unece.org/DAM/trans/danger/publi/ghs/ghs_rev03/English/03e_part3.pdf"
+    },
+    "local_inventory": {
+      "name": "X-FORGE starting property inventory",
+      "path": "definitions/starting_text.txt"
+    }
+  },
+  "models": {
+    "Admet-AI": {
+      "docker_name": "Admet-AI",
+      "model_source": "ADMET-AI v2; Chemprop models trained on TDC plus RDKit descriptors.",
+      "source_refs": [
+        "admet_ai_metadata",
+        "admet_ai_physchem",
+        "tdc",
+        "tdc_tox"
+      ],
+      "properties": {
+        "molecular_weight": {
+          "property_name": "molecular_weight",
+          "kind": "descriptor",
+          "unit": "Da",
+          "description": "Average molecular weight computed from the submitted structure.",
+          "origin": "RDKit MolWt via ADMET-AI; descriptor, not a learned model.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "molecular_weight_oral"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 500,
+              "unit": "Da"
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "logP": {
+          "property_name": "logP",
+          "kind": "descriptor",
+          "unit": "log10_ratio",
+          "description": "Wildman-Crippen octanol/water logP for the submitted structure.",
+          "origin": "RDKit MolLogP via ADMET-AI; descriptor, not a learned model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "hydrogen_bond_acceptors": {
+          "property_name": "hydrogen_bond_acceptors",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of hydrogen-bond acceptor atoms; relates to polarity but is not monotonic solubility.",
+          "origin": "RDKit CalcNumHBA via ADMET-AI.",
+          "related_to": [
+            "solubility",
+            "permeability"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "hba_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 10,
+              "unit": "count"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "hydrogen_bond_donors": {
+          "property_name": "hydrogen_bond_donors",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of hydrogen-bond donor groups; relates to polarity but is not monotonic solubility.",
+          "origin": "RDKit CalcNumHBD via ADMET-AI.",
+          "related_to": [
+            "solubility",
+            "permeability"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "hbd_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 5,
+              "unit": "count"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "Lipinski": {
+          "property_name": "Lipinski",
+          "kind": "rule_score",
+          "unit": "rules_satisfied_out_of_4",
+          "description": "Number of four Lipinski conditions satisfied, not a probability or violation count.",
+          "origin": "ADMET-AI RDKit calculation: MW <= 500, logP <= 5, HBA <= 10, HBD <= 5.",
+          "raw_policy": {
+            "mode": "threshold",
+            "pass": {
+              "operator": "==",
+              "value": 4
+            }
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "exact_value",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "==",
+              "value": 4
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "QED": {
+          "property_name": "QED",
+          "kind": "score",
+          "unit": "unitless_0_to_1",
+          "description": "Quantitative estimate of drug-likeness combining several descriptors.",
+          "origin": "RDKit QED via ADMET-AI.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "qed_druglike"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "stereo_centers": {
+          "property_name": "stereo_centers",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Number of atom stereocenters; complexity and synthesis concern, not intrinsically poor solubility.",
+          "origin": "RDKit CalcNumAtomStereoCenters via ADMET-AI.",
+          "aliases_from_draft": [
+            "stero_centers"
+          ],
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "no_universal_direction"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "no_universal_direction"
+          }
+        },
+        "tpsa": {
+          "property_name": "tpsa",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Topological polar surface area; affects hydration and passive permeability but not solubility monotonically.",
+          "origin": "RDKit CalcTPSA via ADMET-AI.",
+          "related_to": [
+            "solubility",
+            "permeability"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "tpsa_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 140,
+              "unit": "angstrom^2"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "HIA_Hou": {
+          "property_name": "HIA_Hou",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of the positive human-intestinal-absorption class.",
+          "origin": "TDC HIA Hou dataset; ADMET-AI classifier.",
+          "aliases_from_draft": [
+            "HIA_HOU"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability",
+            "excluded_from_moo": "absorption_not_solubility"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": "absorption_not_solubility"
+          }
+        },
+        "Bioavailability_Ma": {
+          "property_name": "Bioavailability_Ma",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of the positive human oral-bioavailability class.",
+          "origin": "TDC Bioavailability Ma dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability",
+            "excluded_from_moo": "composite_pk_endpoint"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": "composite_pk_endpoint"
+          }
+        },
+        "Solubility_AqSolDB": {
+          "property_name": "Solubility_AqSolDB",
+          "kind": "regression",
+          "unit": "log10_mol_per_liter",
+          "description": "Predicted aqueous solubility; larger logS means greater molar solubility.",
+          "origin": "AqSolDB through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "direct_positive"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "objective": "solubility",
+            "excluded_from_moo": null
+          }
+        },
+        "Lipophilicity_AstraZeneca": {
+          "property_name": "Lipophilicity_AstraZeneca",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Learned lipophilicity estimate from AstraZeneca/MoleculeNet data.",
+          "origin": "AstraZeneca lipophilicity dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "HydrationFreeEnergy_FreeSolv": {
+          "property_name": "HydrationFreeEnergy_FreeSolv",
+          "kind": "regression",
+          "unit": "kcal/mol",
+          "description": "Free energy for transfer from gas phase into water; more-negative values mean more favorable hydration.",
+          "origin": "FreeSolv through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "inverse_raw_use_negated_value",
+            "weight": 0.5
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better_after_transformation",
+            "enabled": true,
+            "transformation": "negate_raw_value",
+            "objective": "solubility",
+            "weight": 0.5,
+            "excluded_from_moo": null
+          }
+        },
+        "Caco2_Wang": {
+          "property_name": "Caco2_Wang",
+          "kind": "regression",
+          "unit": "log10_1e-6_cm_per_s",
+          "description": "Log effective permeability across a Caco-2 intestinal epithelial cell model; not solubility.",
+          "origin": "Wang Caco-2 dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "permeability_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "permeability_not_solubility"
+          }
+        },
+        "PAMPA_NCATS": {
+          "property_name": "PAMPA_NCATS",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of the permeable class in an artificial-membrane assay.",
+          "origin": "NCATS PAMPA dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability",
+            "excluded_from_moo": "permeability_not_lipophilicity"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": "permeability_not_lipophilicity"
+          }
+        },
+        "Pgp_Broccatelli": {
+          "property_name": "Pgp_Broccatelli",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of inhibiting the P-glycoprotein efflux transporter.",
+          "origin": "Broccatelli P-gp inhibition dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "BBB_Martins": {
+          "property_name": "BBB_Martins",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of blood-brain-barrier penetration; desired for CNS drugs and often undesired peripherally.",
+          "origin": "Martins BBB dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "endpoint_is_program_dependent"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "endpoint_is_program_dependent"
+          }
+        },
+        "PPBR_AZ": {
+          "property_name": "PPBR_AZ",
+          "kind": "regression",
+          "unit": "percent",
+          "description": "Predicted fraction of drug bound to human plasma proteins.",
+          "origin": "AstraZeneca PPBR dataset through TDC; ADMET-AI regression model.",
+          "related_to": [
+            "distribution",
+            "free_drug_fraction"
+          ],
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "distribution_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "distribution_not_solubility"
+          }
+        },
+        "VDss_Lombardo": {
+          "property_name": "VDss_Lombardo",
+          "kind": "regression",
+          "unit": "L/kg",
+          "description": "Apparent steady-state distribution volume normalized by body mass; neither universally high nor low is best.",
+          "origin": "Lombardo human VDss dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "distribution_endpoint"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "distribution_endpoint"
+          }
+        },
+        "Half_Life_Obach": {
+          "property_name": "Half_Life_Obach",
+          "kind": "regression",
+          "unit": "hour",
+          "description": "Predicted human pharmacokinetic half-life; target window depends on dosing and exposure goals.",
+          "origin": "Obach human PK dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "pk_endpoint_not_lipophilicity"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "pk_endpoint_not_lipophilicity"
+          }
+        },
+        "Clearance_Hepatocyte_AZ": {
+          "property_name": "Clearance_Hepatocyte_AZ",
+          "kind": "regression",
+          "unit": "uL/min/1e6_cells",
+          "description": "Intrinsic clearance measured in hepatocytes, which are liver cells; use a project-specific window.",
+          "origin": "AstraZeneca human/rat hepatocyte data through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "too_little_clearance_can_also_be_undesirable"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "too_little_clearance_can_also_be_undesirable"
+          }
+        },
+        "Clearance_Microsome_AZ": {
+          "property_name": "Clearance_Microsome_AZ",
+          "kind": "regression",
+          "unit": "uL/min/mg",
+          "description": "Intrinsic metabolic clearance in liver microsomal preparations; use a project-specific window.",
+          "origin": "AstraZeneca microsomal data through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "too_little_clearance_can_also_be_undesirable"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "too_little_clearance_can_also_be_undesirable"
+          }
+        },
+        "CYP1A2_Veith": {
+          "property_name": "CYP1A2_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP1A2; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2C19_Veith": {
+          "property_name": "CYP2C19_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2C19; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2C9_Veith": {
+          "property_name": "CYP2C9_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2C9; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2D6_Veith": {
+          "property_name": "CYP2D6_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2D6; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP3A4_Veith": {
+          "property_name": "CYP3A4_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP3A4; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2C9_Substrate_CarbonMangels": {
+          "property_name": "CYP2C9_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP2C9 substrate; substrate status is not intrinsically toxicity.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "CYP2D6_Substrate_CarbonMangels": {
+          "property_name": "CYP2D6_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP2D6 substrate; interpret with the metabolic plan.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "CYP3A4_Substrate_CarbonMangels": {
+          "property_name": "CYP3A4_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP3A4 substrate; interpret with the metabolic plan.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "hERG": {
+          "property_name": "hERG",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of blocking the human hERG potassium channel, a cardiac repolarization liability.",
+          "origin": "TDC hERG blocker dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "ClinTox": {
+          "property_name": "ClinTox",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of the clinically toxic class from ClinTox labels.",
+          "origin": "ClinTox dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "AMES": {
+          "property_name": "AMES",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of a positive Ames bacterial-mutagenicity outcome.",
+          "origin": "TDC Ames dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "DILI": {
+          "property_name": "DILI",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of drug-induced liver injury.",
+          "origin": "TDC DILI dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Carcinogens_Lagunin": {
+          "property_name": "Carcinogens_Lagunin",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of rodent carcinogenicity.",
+          "origin": "Lagunin carcinogenicity dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "LD50_Zhu": {
+          "property_name": "LD50_Zhu",
+          "kind": "regression",
+          "unit": "log10_1_over_mol_per_kg",
+          "description": "Rat acute oral toxicity expressed as log10 inverse molar lethal dose; larger values mean greater toxicity.",
+          "origin": "Zhu rat acute-toxicity dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "derived_threshold",
+            "profile": "ld50_low_concern"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "derived_threshold",
+            "direction": "higher_is_better_after_transformation",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">",
+              "value": 2000,
+              "unit": "mg/kg"
+            },
+            "transformation": {
+              "derived_value": "1000 * molecular_weight_Da * 10^(-LD50_Zhu)",
+              "derived_unit": "mg/kg"
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Skin_Reaction": {
+          "property_name": "Skin_Reaction",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of a positive mouse skin-reaction outcome.",
+          "origin": "TDC Skin Reaction dataset; ADMET-AI classifier.",
+          "aliases_from_draft": [
+            "Skin Reaction"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-AR": {
+          "property_name": "NR-AR",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of androgen-receptor pathway activity in the Tox21 assay.",
+          "origin": "Tox21 NR-AR task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-AR-LBD": {
+          "property_name": "NR-AR-LBD",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of androgen-receptor ligand-binding-domain activity.",
+          "origin": "Tox21 NR-AR-LBD task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-AhR": {
+          "property_name": "NR-AhR",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of aryl-hydrocarbon-receptor pathway activity.",
+          "origin": "Tox21 NR-AhR task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-Aromatase": {
+          "property_name": "NR-Aromatase",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of aromatase-pathway activity.",
+          "origin": "Tox21 NR-Aromatase task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-ER": {
+          "property_name": "NR-ER",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of full-length estrogen-receptor pathway activity.",
+          "origin": "Tox21 NR-ER task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-ER-LBD": {
+          "property_name": "NR-ER-LBD",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of estrogen-receptor ligand-binding-domain activity.",
+          "origin": "Tox21 NR-ER-LBD task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-PPAR-gamma": {
+          "property_name": "NR-PPAR-gamma",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of PPAR-gamma pathway activity.",
+          "origin": "Tox21 NR-PPAR-gamma task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-ARE": {
+          "property_name": "SR-ARE",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of antioxidant-response-element stress-pathway activity.",
+          "origin": "Tox21 SR-ARE task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-ATAD5": {
+          "property_name": "SR-ATAD5",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of ATAD5/DNA-damage stress-response activity.",
+          "origin": "Tox21 SR-ATAD5 task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-HSE": {
+          "property_name": "SR-HSE",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of heat-shock-response-element activity.",
+          "origin": "Tox21 SR-HSE task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-MMP": {
+          "property_name": "SR-MMP",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of mitochondrial-membrane-potential disruption.",
+          "origin": "Tox21 SR-MMP task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-p53": {
+          "property_name": "SR-p53",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of p53 stress-response pathway activity.",
+          "origin": "Tox21 SR-p53 task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "Admetica": {
+      "docker_name": "Admetica",
+      "model_source": "Admetica graph-transformer models trained on the documented ADMET datasets.",
+      "source_refs": [
+        "admetica"
+      ],
+      "properties": {
+        "caco2": {
+          "property_name": "caco2",
+          "kind": "regression",
+          "unit": "cm/s_as_documented",
+          "description": "Predicted Caco-2 cell permeability; higher permeability is generally favorable but it is not solubility.",
+          "origin": "Wang Caco-2 dataset; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "permeability_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "permeability_not_solubility"
+          }
+        },
+        "solubility": {
+          "property_name": "solubility",
+          "kind": "regression",
+          "unit": "log10_mol_per_liter",
+          "description": "Predicted aqueous solubility; larger log mol/L means more soluble.",
+          "origin": "AqSolDB/Sorkun dataset; Admetica regression model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "direct_positive"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "objective": "solubility",
+            "excluded_from_moo": null
+          }
+        },
+        "lipophilicity": {
+          "property_name": "lipophilicity",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Predicted octanol/water lipophilicity on a logarithmic ratio scale.",
+          "origin": "AstraZeneca/MoleculeNet data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "ppbr": {
+          "property_name": "ppbr",
+          "kind": "regression",
+          "unit": "percent_or_native_model_scale",
+          "description": "Predicted plasma-protein binding rate; distribution endpoint, not solubility.",
+          "origin": "AstraZeneca PPBR data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "distribution_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "distribution_not_solubility"
+          }
+        },
+        "vdss": {
+          "property_name": "vdss",
+          "kind": "regression",
+          "unit": "L/kg",
+          "description": "Predicted steady-state volume of distribution.",
+          "origin": "Lombardo human VDss data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cyp1a2-inhibitor": {
+          "property_name": "cyp1a2-inhibitor",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of human CYP1A2 inhibition.",
+          "origin": "PubChem CYP panel; Admetica classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "cyp1a2-substrate": {
+          "property_name": "cyp1a2-substrate",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of CYP1A2 substrate status; not inherently a toxicity endpoint.",
+          "origin": "Admetica CYP substrate model; dataset provenance should be confirmed from the Docker version.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2c19-inhibitor": {
+          "property_name": "cyp2c19-inhibitor",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of human CYP2C19 inhibition.",
+          "origin": "PubChem CYP panel; Admetica classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2c19-substrate": {
+          "property_name": "cyp2c19-substrate",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of CYP2C19 substrate status; interpret in the metabolic context.",
+          "origin": "Admetica CYP substrate model; dataset provenance should be confirmed from the Docker version.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2c9-inhibitor": {
+          "property_name": "cyp2c9-inhibitor",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of human CYP2C9 inhibition.",
+          "origin": "PubChem CYP panel; Admetica classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2c9-substrate": {
+          "property_name": "cyp2c9-substrate",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of CYP2C9 substrate status; interpret in the metabolic context.",
+          "origin": "Admetica CYP substrate model.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2d6-inhibitor": {
+          "property_name": "cyp2d6-inhibitor",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of human CYP2D6 inhibition.",
+          "origin": "PubChem CYP panel; Admetica classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "cyp2d6-substrate": {
+          "property_name": "cyp2d6-substrate",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of CYP2D6 substrate status; interpret in the metabolic context.",
+          "origin": "Carbon-Mangels/Zaretzki-style CYP substrate data; Admetica classifier.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cl-heap": {
+          "property_name": "cl-heap",
+          "kind": "regression",
+          "unit": "uL/min/1e6_cells",
+          "description": "Hepatocyte intrinsic clearance; the output name appears to contain \"heap\" rather than \"hepa\" and is preserved.",
+          "origin": "AstraZeneca/Li hepatocyte-clearance data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "cl-micro": {
+          "property_name": "cl-micro",
+          "kind": "regression",
+          "unit": "mL/min/g_as_documented",
+          "description": "Microsomal intrinsic clearance; use a project-specific acceptable window.",
+          "origin": "AstraZeneca/Li microsomal-clearance data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "half-life": {
+          "property_name": "half-life",
+          "kind": "regression",
+          "unit": "hour",
+          "description": "Predicted human half-life; desired range depends on dosing and exposure goals.",
+          "origin": "Obach human PK data; Admetica regression model.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "Admethyst": {
+      "docker_name": "Admethyst",
+      "model_source": "ADMEThyst feature pipeline; listed values are ADMET-AI-derived rather than independent ADMEThyst endpoints.",
+      "source_refs": [
+        "admethyst",
+        "admet_ai_metadata",
+        "tdc",
+        "tdc_tox"
+      ],
+      "properties": {
+        "AMES": {
+          "property_name": "AMES",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of a positive Ames bacterial-mutagenicity outcome.",
+          "origin": "TDC Ames dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "BBB_Martins": {
+          "property_name": "BBB_Martins",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "ADMET-AI-derived probability of blood-brain-barrier penetration; desirability is program-specific.",
+          "origin": "Martins BBB dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "endpoint_is_program_dependent"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "endpoint_is_program_dependent"
+          }
+        },
+        "Bioavailability_Ma": {
+          "property_name": "Bioavailability_Ma",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "ADMET-AI-derived probability of the positive oral-bioavailability class.",
+          "origin": "Ma bioavailability dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP1A2_Veith": {
+          "property_name": "CYP1A2_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP1A2; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2C19_Veith": {
+          "property_name": "CYP2C19_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2C19; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2C9_Substrate_CarbonMangels": {
+          "property_name": "CYP2C9_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP2C9 substrate; substrate status is not intrinsically toxicity.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "CYP2C9_Veith": {
+          "property_name": "CYP2C9_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2C9; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP2D6_Substrate_CarbonMangels": {
+          "property_name": "CYP2D6_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP2D6 substrate; interpret with the metabolic plan.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "CYP2D6_Veith": {
+          "property_name": "CYP2D6_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP2D6; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "CYP3A4_Substrate_CarbonMangels": {
+          "property_name": "CYP3A4_Substrate_CarbonMangels",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule is a CYP3A4 substrate; interpret with the metabolic plan.",
+          "origin": "Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "metabolism_classification"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "metabolism_classification"
+          }
+        },
+        "CYP3A4_Veith": {
+          "property_name": "CYP3A4_Veith",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability that the molecule inhibits human CYP3A4; a drug-drug-interaction liability.",
+          "origin": "Veith/PubChem CYP panel through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Carcinogens_Lagunin": {
+          "property_name": "Carcinogens_Lagunin",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of rodent carcinogenicity.",
+          "origin": "Lagunin carcinogenicity dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "ClinTox": {
+          "property_name": "ClinTox",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of the clinically toxic class from ClinTox labels.",
+          "origin": "ClinTox dataset through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "DILI": {
+          "property_name": "DILI",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of drug-induced liver injury.",
+          "origin": "TDC DILI dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "HIA_Hou": {
+          "property_name": "HIA_Hou",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "ADMET-AI-derived probability of positive human intestinal absorption.",
+          "origin": "Hou HIA dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability",
+            "excluded_from_moo": "absorption_not_solubility"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": "absorption_not_solubility"
+          }
+        },
+        "NR-AR-LBD": {
+          "property_name": "NR-AR-LBD",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of androgen-receptor ligand-binding-domain activity.",
+          "origin": "Tox21 NR-AR-LBD task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-AR": {
+          "property_name": "NR-AR",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of androgen-receptor pathway activity in the Tox21 assay.",
+          "origin": "Tox21 NR-AR task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-AhR": {
+          "property_name": "NR-AhR",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of aryl-hydrocarbon-receptor pathway activity.",
+          "origin": "Tox21 NR-AhR task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-Aromatase": {
+          "property_name": "NR-Aromatase",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of aromatase-pathway activity.",
+          "origin": "Tox21 NR-Aromatase task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-ER-LBD": {
+          "property_name": "NR-ER-LBD",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of estrogen-receptor ligand-binding-domain activity.",
+          "origin": "Tox21 NR-ER-LBD task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-ER": {
+          "property_name": "NR-ER",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of full-length estrogen-receptor pathway activity.",
+          "origin": "Tox21 NR-ER task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "NR-PPAR-gamma": {
+          "property_name": "NR-PPAR-gamma",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of PPAR-gamma pathway activity.",
+          "origin": "Tox21 NR-PPAR-gamma task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "PAMPA_NCATS": {
+          "property_name": "PAMPA_NCATS",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "ADMET-AI-derived probability of artificial-membrane permeability.",
+          "origin": "NCATS PAMPA dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "favorable_probability",
+            "excluded_from_moo": "permeability_not_lipophilicity"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">=",
+              "value": 0.5
+            },
+            "excluded_from_moo": "permeability_not_lipophilicity"
+          }
+        },
+        "Pgp_Broccatelli": {
+          "property_name": "Pgp_Broccatelli",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "ADMET-AI-derived probability of P-glycoprotein inhibition.",
+          "origin": "Broccatelli P-gp dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-ARE": {
+          "property_name": "SR-ARE",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of antioxidant-response-element stress-pathway activity.",
+          "origin": "Tox21 SR-ARE task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-ATAD5": {
+          "property_name": "SR-ATAD5",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of ATAD5/DNA-damage stress-response activity.",
+          "origin": "Tox21 SR-ATAD5 task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-HSE": {
+          "property_name": "SR-HSE",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of heat-shock-response-element activity.",
+          "origin": "Tox21 SR-HSE task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-MMP": {
+          "property_name": "SR-MMP",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of mitochondrial-membrane-potential disruption.",
+          "origin": "Tox21 SR-MMP task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "SR-p53": {
+          "property_name": "SR-p53",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of p53 stress-response pathway activity.",
+          "origin": "Tox21 SR-p53 task through TDC; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Skin_Reaction": {
+          "property_name": "Skin_Reaction",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of a positive mouse skin-reaction outcome.",
+          "origin": "TDC Skin Reaction dataset; ADMET-AI classifier.",
+          "aliases_from_draft": [
+            "Skin Reaction"
+          ],
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "hERG": {
+          "property_name": "hERG",
+          "kind": "classifier_probability",
+          "unit": "probability",
+          "description": "Probability of blocking the human hERG potassium channel, a cardiac repolarization liability.",
+          "origin": "TDC hERG blocker dataset; ADMET-AI classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "adverse_probability"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 0.5
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Caco2_Wang": {
+          "property_name": "Caco2_Wang",
+          "kind": "regression",
+          "unit": "log10_1e-6_cm_per_s",
+          "description": "ADMET-AI-derived Caco-2 permeability estimate; not a solubility measure.",
+          "origin": "Wang Caco-2 dataset through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "permeability_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "permeability_not_solubility"
+          }
+        },
+        "Clearance_Hepatocyte_AZ": {
+          "property_name": "Clearance_Hepatocyte_AZ",
+          "kind": "regression",
+          "unit": "uL/min/1e6_cells",
+          "description": "ADMET-AI-derived hepatocyte intrinsic clearance.",
+          "origin": "AstraZeneca hepatocyte data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "Clearance_Microsome_AZ": {
+          "property_name": "Clearance_Microsome_AZ",
+          "kind": "regression",
+          "unit": "uL/min/mg",
+          "description": "ADMET-AI-derived microsomal intrinsic clearance.",
+          "origin": "AstraZeneca microsome data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "Half_Life_Obach": {
+          "property_name": "Half_Life_Obach",
+          "kind": "regression",
+          "unit": "hour",
+          "description": "ADMET-AI-derived human half-life estimate; desired range is program-specific.",
+          "origin": "Obach PK data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "pk_endpoint_not_lipophilicity"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "pk_endpoint_not_lipophilicity"
+          }
+        },
+        "HydrationFreeEnergy_FreeSolv": {
+          "property_name": "HydrationFreeEnergy_FreeSolv",
+          "kind": "regression",
+          "unit": "kcal/mol",
+          "description": "ADMET-AI-derived gas-to-water hydration free energy; negate for a favorable-hydration score.",
+          "origin": "FreeSolv through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "inverse_raw_use_negated_value",
+            "weight": 0.5
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better_after_transformation",
+            "enabled": true,
+            "transformation": "negate_raw_value",
+            "objective": "solubility",
+            "weight": 0.5,
+            "excluded_from_moo": null
+          }
+        },
+        "LD50_Zhu": {
+          "property_name": "LD50_Zhu",
+          "kind": "regression",
+          "unit": "log10_1_over_mol_per_kg",
+          "description": "Rat acute oral toxicity expressed as log10 inverse molar lethal dose; larger values mean greater toxicity.",
+          "origin": "Zhu rat acute-toxicity dataset through TDC; ADMET-AI regression model.",
+          "raw_policy": {
+            "mode": "derived_threshold",
+            "profile": "ld50_low_concern"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "derived_threshold",
+            "direction": "higher_is_better_after_transformation",
+            "enabled": true,
+            "pass_condition": {
+              "operator": ">",
+              "value": 2000,
+              "unit": "mg/kg"
+            },
+            "transformation": {
+              "derived_value": "1000 * molecular_weight_Da * 10^(-LD50_Zhu)",
+              "derived_unit": "mg/kg"
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Lipophilicity_AstraZeneca": {
+          "property_name": "Lipophilicity_AstraZeneca",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "ADMET-AI-derived learned lipophilicity estimate.",
+          "origin": "AstraZeneca lipophilicity data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "PPBR_AZ": {
+          "property_name": "PPBR_AZ",
+          "kind": "regression",
+          "unit": "percent",
+          "description": "ADMET-AI-derived human plasma-protein-binding rate; distribution endpoint, not solubility.",
+          "origin": "AstraZeneca PPBR data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "distribution_not_solubility"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "distribution_not_solubility"
+          }
+        },
+        "Solubility_AqSolDB": {
+          "property_name": "Solubility_AqSolDB",
+          "kind": "regression",
+          "unit": "log10_mol_per_liter",
+          "description": "ADMET-AI-derived aqueous log solubility; larger values mean greater molar solubility.",
+          "origin": "AqSolDB through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "direct_positive"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "objective": "solubility",
+            "excluded_from_moo": null
+          }
+        },
+        "VDss_Lombardo": {
+          "property_name": "VDss_Lombardo",
+          "kind": "regression",
+          "unit": "L/kg",
+          "description": "ADMET-AI-derived human steady-state distribution volume.",
+          "origin": "Lombardo VDss data through TDC, emitted by the ADMEThyst pipeline.",
+          "raw_policy": {
+            "mode": "context_threshold"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "KinasePred": {
+      "docker_name": "KinasePred",
+      "model_source": "KinasePred Docker output; exact checkpoint and training set are not identified in the source inventory.",
+      "source_refs": [
+        "local_inventory"
+      ],
+      "properties": {
+        "Kinase Activity Prediction": {
+          "property_name": "Kinase Activity Prediction",
+          "kind": "model_score_unknown_scale",
+          "unit": "model_native",
+          "description": "Predicted kinase activity. Interpretation requires the kinase target, output scale, and positive-class definition.",
+          "origin": "KinasePred model; provenance must be added from the Docker image or model card.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "enabled": false,
+            "reason": "target_and_scale_required"
+          },
+          "selection": {
+            "role": "disabled",
+            "mode": "disabled",
+            "direction": "unknown",
+            "enabled": false,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction",
+              "target_and_scale_required"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "BoiledEgg": {
+      "docker_name": "BoiledEgg",
+      "model_source": "BOILED-Egg passive-permeation model based on WLogP and TPSA.",
+      "source_refs": [
+        "boiled_egg",
+        "rdkit"
+      ],
+      "properties": {
+        "BBB": {
+          "property_name": "BBB",
+          "kind": "binary_classification",
+          "unit": "boolean_or_native_label",
+          "description": "Whether the WLogP/TPSA point lies in the BOILED-Egg brain-penetration region.",
+          "origin": "BOILED-Egg geometric classifier.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "program_dependent_permeation"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "program_dependent_permeation"
+          }
+        },
+        "GIA": {
+          "property_name": "GIA",
+          "kind": "binary_classification",
+          "unit": "boolean_or_native_label",
+          "description": "Whether the WLogP/TPSA point lies in the high gastrointestinal-absorption region.",
+          "origin": "BOILED-Egg geometric classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "pass": {
+              "operator": "==",
+              "value": true
+            },
+            "excluded_from_moo": "absorption_not_solubility"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "exact_value",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "==",
+              "value": true
+            },
+            "excluded_from_moo": "absorption_not_solubility"
+          }
+        },
+        "TPSA": {
+          "property_name": "TPSA",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Topological polar surface area used as a BOILED-Egg coordinate; not a monotonic solubility output.",
+          "origin": "RDKit/BOILED-Egg descriptor calculation.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "tpsa_oral",
+            "excluded_from_moo": "classifier_input_and_non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 140,
+              "unit": "angstrom^2"
+            },
+            "excluded_from_moo": "classifier_input_and_non_monotonic_proxy"
+          }
+        },
+        "WLogP": {
+          "property_name": "WLogP",
+          "kind": "descriptor",
+          "unit": "log10_ratio",
+          "description": "Wildman-Crippen logP used as the BOILED-Egg lipophilicity coordinate.",
+          "origin": "Wildman-Crippen/RDKit descriptor calculation.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "CToxPred": {
+      "docker_name": "CToxPred",
+      "model_source": "CToxPred neural classifiers for three cardiac ion-channel liabilities.",
+      "source_refs": [
+        "ctoxpred"
+      ],
+      "native_output_semantics": "0 = non-toxic/non-blocker; 1 = toxic/blocker",
+      "properties": {
+        "hERG": {
+          "property_name": "hERG",
+          "kind": "binary_classification",
+          "unit": "0_or_1",
+          "description": "Binary prediction of hERG potassium-channel blocking liability.",
+          "origin": "CToxPred hERG fingerprint classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "native_nontoxic_binary"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "exact_value",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "==",
+              "value": 0
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Nav1.5": {
+          "property_name": "Nav1.5",
+          "kind": "binary_classification",
+          "unit": "0_or_1",
+          "description": "Binary prediction of Nav1.5 cardiac sodium-channel blocking liability.",
+          "origin": "CToxPred fingerprint-plus-descriptor classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "native_nontoxic_binary"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "exact_value",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "==",
+              "value": 0
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "Cav1.2": {
+          "property_name": "Cav1.2",
+          "kind": "binary_classification",
+          "unit": "0_or_1",
+          "description": "Binary prediction of Cav1.2 L-type calcium-channel blocking liability.",
+          "origin": "CToxPred fingerprint-plus-descriptor classifier.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "native_nontoxic_binary"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "exact_value",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "==",
+              "value": 0
+            },
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "LogPPrepML": {
+      "docker_name": "LogPPrepML",
+      "model_source": "LogPPrepML Docker; checkpoint provenance is not identified in the source inventory.",
+      "source_refs": [
+        "local_inventory"
+      ],
+      "properties": {
+        "ML_LogP_NN": {
+          "property_name": "ML_LogP_NN",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Neural-network estimate of octanol/water logP.",
+          "origin": "LogPPrepML neural-network model; training-set citation should be added from its model card.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "ML_LogP_Ridge": {
+          "property_name": "ML_LogP_Ridge",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Ridge-regression estimate of octanol/water logP.",
+          "origin": "LogPPrepML ridge model; training-set citation should be added from its model card.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "PChemCever": {
+      "docker_name": "PChemCever",
+      "model_source": "PChemCever Docker outputs corresponding to RDKit-style molecular descriptors.",
+      "source_refs": [
+        "rdkit",
+        "local_inventory"
+      ],
+      "group_policy": "These descriptors may correlate with lipophilicity or solubility and may be model features, but none is a direct monotonic endpoint. They are deliberately excluded from both MOO objectives.",
+      "properties": {
+        "PEOE_VSA7": {
+          "property_name": "PEOE_VSA7",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms whose PEOE partial-charge contribution is in [-0.05, 0.00).",
+          "origin": "RDKit MOE-style charge/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "VSA_EState6": {
+          "property_name": "VSA_EState6",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "Sum of electrotopological-state indices for atoms in VSA bin 6.",
+          "origin": "RDKit VSA/EState descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "PEOE_VSA6": {
+          "property_name": "PEOE_VSA6",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms whose PEOE partial-charge contribution is in [-0.10, -0.05).",
+          "origin": "RDKit MOE-style charge/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "MolMR": {
+          "property_name": "MolMR",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "Crippen molar refractivity, reflecting molecular volume and polarizability.",
+          "origin": "RDKit Crippen MolMR descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "not_lipophilicity_itself"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "not_lipophilicity_itself"
+          }
+        },
+        "BCUT2D_LOGPLOW": {
+          "property_name": "BCUT2D_LOGPLOW",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "Low BCUT eigenvalue using atomic Crippen logP contributions on the diagonal.",
+          "origin": "RDKit BCUT2D descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "spectral_feature_not_logp"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "spectral_feature_not_logp"
+          }
+        },
+        "NumAromaticRings": {
+          "property_name": "NumAromaticRings",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of aromatic rings in the molecular graph.",
+          "origin": "RDKit ring descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "no_universal_direction"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "no_universal_direction"
+          }
+        },
+        "SMR_VSA7": {
+          "property_name": "SMR_VSA7",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms with molar-refractivity contributions in [3.05, 3.63).",
+          "origin": "RDKit MOE-style refractivity/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "EState_VSA8": {
+          "property_name": "EState_VSA8",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms whose electrotopological-state value falls in EState bin 8.",
+          "origin": "RDKit EState/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "SlogP_VSA2": {
+          "property_name": "SlogP_VSA2",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms with Crippen logP contributions in [-0.40, -0.20).",
+          "origin": "RDKit MOE-style logP/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          }
+        },
+        "VSA_EState8": {
+          "property_name": "VSA_EState8",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "Sum of electrotopological-state indices for atoms in VSA bin 8.",
+          "origin": "RDKit VSA/EState descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "VSA_EState10": {
+          "property_name": "VSA_EState10",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "Sum of electrotopological-state indices for atoms in VSA bin 10.",
+          "origin": "RDKit VSA/EState descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "BCUT2D_LOGPHI": {
+          "property_name": "BCUT2D_LOGPHI",
+          "kind": "descriptor",
+          "unit": "descriptor_native",
+          "description": "High BCUT eigenvalue using atomic Crippen logP contributions on the diagonal.",
+          "origin": "RDKit BCUT2D descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "spectral_feature_not_logp"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "spectral_feature_not_logp"
+          }
+        },
+        "SlogP_VSA10": {
+          "property_name": "SlogP_VSA10",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms with Crippen logP contributions in [0.40, 0.50).",
+          "origin": "RDKit MOE-style logP/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          }
+        },
+        "SlogP_VSA5": {
+          "property_name": "SlogP_VSA5",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms with Crippen logP contributions in [0.10, 0.15).",
+          "origin": "RDKit MOE-style logP/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "contribution_bin_not_total_logp"
+          }
+        },
+        "Kappa3": {
+          "property_name": "Kappa3",
+          "kind": "descriptor",
+          "unit": "unitless",
+          "description": "Third-order Kier molecular shape index.",
+          "origin": "RDKit graph-shape descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "shape_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "shape_feature"
+          }
+        },
+        "fr_Ar_OH": {
+          "property_name": "fr_Ar_OH",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of aromatic hydroxyl functional groups.",
+          "origin": "RDKit fragment-count descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "fragment_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "fragment_feature"
+          }
+        },
+        "EState_VSA1": {
+          "property_name": "EState_VSA1",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Surface area of atoms whose electrotopological-state value falls in EState bin 1.",
+          "origin": "RDKit EState/VSA descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "binned_surface_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "binned_surface_feature"
+          }
+        },
+        "fr_halogen": {
+          "property_name": "fr_halogen",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of halogen atoms recognized by the RDKit fragment definition.",
+          "origin": "RDKit fragment-count descriptor.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "fragment_feature"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "fragment_feature"
+          }
+        }
+      }
+    },
+    "CardioTox": {
+      "docker_name": "CardioTox",
+      "model_source": "CardioTox Docker; native hERG output currently needs an X-FORGE handler.",
+      "source_refs": [
+        "local_inventory"
+      ],
+      "properties": {
+        "hERG": {
+          "property_name": "hERG",
+          "kind": "toxicity_output_unknown_scale",
+          "unit": "model_native",
+          "description": "hERG cardiac-ion-channel liability output; native scale and class encoding are not yet normalized.",
+          "origin": "CardioTox model; exact checkpoint/dataset provenance must be added with its handler.",
+          "raw_policy": {
+            "mode": "threshold",
+            "enabled": false,
+            "intended_pass": {
+              "operator": "==",
+              "value": "normalized_non_blocker"
+            },
+            "reason": "Do not enforce until the handler proves native scale and positive-class semantics."
+          },
+          "selection": {
+            "role": "disabled",
+            "mode": "disabled",
+            "direction": "unknown",
+            "enabled": false,
+            "unknowns": [
+              "Do not enforce until the handler proves native scale and positive-class semantics."
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "ClassicalGSG": {
+      "docker_name": "ClassicalGSG",
+      "model_source": "ClassicalGSG neural logP predictors using force-field atomic attributes and graph scattering.",
+      "source_refs": [
+        "classical_gsg"
+      ],
+      "properties": {
+        "LogP_MMFF": {
+          "property_name": "LogP_MMFF",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Octanol/water logP predicted from MMFF94-derived atomic attributes.",
+          "origin": "ClassicalGSG MMFF94 pretrained model, trained on OpenChem/PHYSPROP logP data.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "LogP_CGenFF": {
+          "property_name": "LogP_CGenFF",
+          "kind": "regression",
+          "unit": "log10_ratio",
+          "description": "Octanol/water logP predicted from CGenFF-derived atomic attributes.",
+          "origin": "ClassicalGSG CGenFF pretrained model, trained on OpenChem/PHYSPROP logP data.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        }
+      }
+    },
+    "MolProperty": {
+      "docker_name": "MolProperty",
+      "model_source": "MolProperty Docker; descriptor implementation and learned-model provenance are not identified in the source inventory.",
+      "source_refs": [
+        "local_inventory",
+        "rdkit"
+      ],
+      "properties": {
+        "logP": {
+          "property_name": "logP",
+          "kind": "regression_or_descriptor",
+          "unit": "log10_ratio",
+          "description": "Estimated octanol/water partition coefficient on a log10 scale.",
+          "origin": "MolProperty logP output; confirm the Docker's calculation/model implementation.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "lipophilicity",
+            "relationship": "direct"
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "target_window",
+            "direction": "target_window",
+            "enabled": true,
+            "pass_condition": {
+              "minimum": 1.0,
+              "maximum": 3.0,
+              "unit": "log10_ratio"
+            },
+            "objective": "lipophilicity",
+            "unknowns": [
+              "Project-specific lipophilicity window may override the registry default"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "HBA": {
+          "property_name": "HBA",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Hydrogen-bond acceptor count; polarity descriptor, not a monotonic solubility output.",
+          "origin": "MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "hba_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 10,
+              "unit": "count"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "HBD": {
+          "property_name": "HBD",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Hydrogen-bond donor count; polarity descriptor, not a monotonic solubility output.",
+          "origin": "MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "hbd_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 5,
+              "unit": "count"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "TPSA": {
+          "property_name": "TPSA",
+          "kind": "descriptor",
+          "unit": "angstrom^2",
+          "description": "Topological polar surface area; related to hydration and permeability but not solubility monotonically.",
+          "origin": "MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "tpsa_oral",
+            "excluded_from_moo": "non_monotonic_proxy"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 140,
+              "unit": "angstrom^2"
+            },
+            "excluded_from_moo": "non_monotonic_proxy"
+          }
+        },
+        "RotatableBonds": {
+          "property_name": "RotatableBonds",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Count of rotatable bonds, used as a molecular-flexibility/developability descriptor.",
+          "origin": "MolProperty descriptor output; exact rotatable-bond definition unconfirmed.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "rotatable_bonds_oral"
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 10,
+              "unit": "count"
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "pka": {
+          "property_name": "pka",
+          "kind": "regression_unknown_convention",
+          "unit": "pKa",
+          "description": "Predicted acid/base dissociation constant; solubility effects require site, ionization type, pH, and temperature.",
+          "origin": "MolProperty pKa output; model/checkpoint and acid/base convention unconfirmed.",
+          "raw_policy": {
+            "mode": "context_threshold",
+            "excluded_from_moo": "ph_and_site_context_required"
+          },
+          "selection": {
+            "role": "context",
+            "mode": "context_dependent",
+            "direction": "program_dependent",
+            "enabled": true,
+            "unknowns": [
+              "The YAML does not provide a universal pass threshold or direction"
+            ],
+            "excluded_from_moo": "ph_and_site_context_required"
+          }
+        },
+        "logS": {
+          "property_name": "logS",
+          "kind": "regression",
+          "unit": "presumed_log10_mol_per_liter",
+          "description": "Predicted logarithmic aqueous solubility; larger values normally mean greater molar solubility.",
+          "origin": "MolProperty logS output; dataset, pH, and temperature convention unconfirmed.",
+          "raw_policy": {
+            "mode": "moo",
+            "objective": "solubility",
+            "relationship": "direct_positive",
+            "requires_unit_confirmation": true
+          },
+          "selection": {
+            "role": "objective",
+            "mode": "maximize",
+            "direction": "higher_is_better",
+            "enabled": true,
+            "objective": "solubility",
+            "excluded_from_moo": null
+          }
+        },
+        "numRings": {
+          "property_name": "numRings",
+          "kind": "descriptor",
+          "unit": "count",
+          "description": "Number of rings in the molecular graph; structural complexity descriptor with no universal direction.",
+          "origin": "MolProperty ring-count output; exact ring definition unconfirmed.",
+          "raw_policy": {
+            "mode": "informational",
+            "excluded_from_moo": "no_universal_direction"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": "no_universal_direction"
+          }
+        },
+        "ruleOfFive": {
+          "property_name": "ruleOfFive",
+          "kind": "rule_result",
+          "unit": "model_native",
+          "description": "Lipinski Rule-of-Five result; native value may be a boolean, satisfied-rule count, or violation count.",
+          "origin": "MolProperty rule implementation; encoding must be confirmed before gating.",
+          "raw_policy": {
+            "mode": "threshold",
+            "enabled": false,
+            "reason": "native_encoding_required"
+          },
+          "selection": {
+            "role": "disabled",
+            "mode": "disabled",
+            "direction": "unknown",
+            "enabled": false,
+            "unknowns": [
+              "native_encoding_required"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "veberRule": {
+          "property_name": "veberRule",
+          "kind": "rule_result",
+          "unit": "model_native",
+          "description": "Veber oral-bioavailability rule result, generally based on rotatable bonds and polar surface area.",
+          "origin": "MolProperty Veber-rule implementation; native encoding must be confirmed.",
+          "raw_policy": {
+            "mode": "threshold",
+            "enabled": false,
+            "reason": "native_encoding_required"
+          },
+          "selection": {
+            "role": "disabled",
+            "mode": "disabled",
+            "direction": "unknown",
+            "enabled": false,
+            "unknowns": [
+              "native_encoding_required"
+            ],
+            "excluded_from_moo": null
+          }
+        },
+        "chemicalFormula": {
+          "property_name": "chemicalFormula",
+          "kind": "identifier",
+          "unit": "text",
+          "description": "Molecular formula derived from the submitted structure.",
+          "origin": "MolProperty structure toolkit.",
+          "raw_policy": {
+            "mode": "informational"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": null
+          }
+        },
+        "molecularMass": {
+          "property_name": "molecularMass",
+          "kind": "descriptor",
+          "unit": "Da",
+          "description": "Molecular mass derived from the submitted structure; confirm average versus monoisotopic convention.",
+          "origin": "MolProperty structure toolkit.",
+          "raw_policy": {
+            "mode": "threshold",
+            "profile": "molecular_weight_oral",
+            "requires_mass_convention_confirmation": true
+          },
+          "selection": {
+            "role": "constraint",
+            "mode": "threshold",
+            "direction": "lower_is_better",
+            "enabled": true,
+            "pass_condition": {
+              "operator": "<=",
+              "value": 500,
+              "unit": "Da"
+            },
+            "excluded_from_moo": null
+          }
+        },
+        "smiles": {
+          "property_name": "smiles",
+          "kind": "identifier",
+          "unit": "text",
+          "description": "SMILES representation returned for identity/traceability, not an optimizable property.",
+          "origin": "MolProperty input echo or canonicalization step; canonicalization convention unconfirmed.",
+          "raw_policy": {
+            "mode": "informational"
+          },
+          "selection": {
+            "role": "informational",
+            "mode": "informational",
+            "direction": "no_universal_direction",
+            "enabled": true,
+            "excluded_from_moo": null
+          }
+        }
+      }
+    }
+  }
+}

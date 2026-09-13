@@ -1,0 +1,57 @@
+{
+  "generated_at_utc": "2026-09-03T14:58:31.044572+00:00",
+  "input_csv": "/Users/andrewweiland/Chopra_Lab_Research/moo_selection/curated_200_approved_drug_molecules.csv",
+  "results_directory": "/Users/andrewweiland/Chopra_Lab_Research/moo_selection/pareto_results",
+  "configuration": [
+    {
+      "port": 18001,
+      "property": "BBB_Martins",
+      "direction": "minimize",
+      "endpoint": "http://localhost:18001/smi",
+      "health": {
+        "status": "healthy",
+        "message": "ADMEThyst microservice is running"
+      }
+    },
+    {
+      "port": 18001,
+      "property": "Solubility_AqSolDB",
+      "direction": "maximize",
+      "endpoint": "http://localhost:18001/smi",
+      "health": {
+        "status": "healthy",
+        "message": "ADMEThyst microservice is running"
+      }
+    }
+  ],
+  "total_compounds": 200,
+  "successful_compounds": 200,
+  "failed_compounds": 0,
+  "pareto_compound_count": 3,
+  "pareto_compounds": [
+    {
+      "candidate_id": "MOO040",
+      "chembl_id": "CHEMBL920",
+      "preferred_name": "CHOLINE",
+      "smiles": "C[N+](C)(C)CCO",
+      "BBB_Martins": 0.3753,
+      "Solubility_AqSolDB": 1.1693
+    },
+    {
+      "candidate_id": "MOO110",
+      "chembl_id": "CHEMBL127",
+      "preferred_name": "MEROPENEM",
+      "smiles": "C[C@@H](O)[C@H]1C(=O)N2C(C(=O)O)=C(S[C@@H]3CN[C@H](C(=O)N(C)C)C3)[C@H](C)[C@H]12",
+      "BBB_Martins": 0.0136,
+      "Solubility_AqSolDB": -0.37
+    },
+    {
+      "candidate_id": "MOO114",
+      "chembl_id": "CHEMBL110458",
+      "preferred_name": "MIGALASTAT",
+      "smiles": "OC[C@H]1NC[C@H](O)[C@@H](O)[C@H]1O",
+      "BBB_Martins": 0.16,
+      "Solubility_AqSolDB": 0.4797
+    }
+  ]
+}

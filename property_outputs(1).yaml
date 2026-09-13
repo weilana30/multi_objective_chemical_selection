@@ -1,0 +1,967 @@
+schema_version: 1
+title: X-FORGE Docker property-output registry
+description: >-
+  Human-readable registry of every property listed in starting_text.txt. Property
+  identifiers remain under their producing model. Only direct measurements or
+  defensible mechanistic proxies participate in the two shared MOO objectives;
+  safety and developability liabilities are constraints instead.
+
+interpretation:
+  classifier_values: >-
+    Unless a model entry says otherwise, a classifier value is the probability of
+    the named positive class. A 0.5 cutoff is a screening default, not a clinical
+    safety guarantee.
+  regression_values: >-
+    Regression units are model-specific. Normalize within each property before
+    combining models; never average raw logS, logP, kcal/mol, percent, or clearance.
+  context_matters: >-
+    BBB penetration, half-life, clearance, volume of distribution, and kinase
+    activity can be desirable or undesirable depending on the therapeutic program.
+  evidence_limit: >-
+    These are computational predictions and descriptors. Thresholds are early-stage
+    gates that require experimental confirmation and applicability-domain checks.
+
+sources:
+  admet_ai_metadata:
+    name: ADMET-AI v2 property metadata
+    url: https://raw.githubusercontent.com/swansonk14/admet_ai/main/admet_ai/resources/data/admet.csv
+  admet_ai_physchem:
+    name: ADMET-AI v2 RDKit physicochemical implementation
+    url: https://github.com/swansonk14/admet_ai/blob/main/admet_ai/physchem.py
+  tdc:
+    name: Therapeutics Data Commons ADMET datasets
+    url: https://tdcommons.ai/single_pred_tasks/adme/
+  tdc_tox:
+    name: Therapeutics Data Commons toxicity datasets
+    url: https://tdcommons.ai/single_pred_tasks/tox/
+  admetica:
+    name: Admetica training-dataset documentation
+    url: https://github.com/datagrok-ai/admetica/blob/main/docs/datasets.md
+  admethyst:
+    name: ADMEThyst repository; its listed features are ADMET-AI-derived
+    url: https://github.com/souhridm/ADMEThyst
+  boiled_egg:
+    name: BOILED-Egg paper
+    url: https://doi.org/10.1002/cmdc.201600182
+  ctoxpred:
+    name: CToxPred repository and native binary-output implementation
+    url: https://github.com/issararab/CToxPred
+  classical_gsg:
+    name: ClassicalGSG logP publication and implementation
+    url: https://doi.org/10.1021/acs.jcim.0c01307
+  rdkit:
+    name: RDKit descriptor documentation
+    url: https://www.rdkit.org/docs/GettingStartedInPython.html#descriptor-calculation
+  ghs_acute_toxicity:
+    name: UN GHS acute-toxicity criteria
+    url: https://unece.org/DAM/trans/danger/publi/ghs/ghs_rev03/English/03e_part3.pdf
+  local_inventory:
+    name: X-FORGE starting property inventory
+    path: definitions/starting_text.txt
+
+threshold_profiles:
+  adverse_probability:
+    pass: {operator: "<=", value: 0.5}
+    note: Default gate for probabilities where the positive class is an adverse event.
+  favorable_probability:
+    pass: {operator: ">=", value: 0.5}
+    note: Default gate for probabilities where the positive class is desirable.
+  native_nontoxic_binary:
+    pass: {operator: "==", value: 0}
+    note: CToxPred defines 0 as non-toxic and 1 as toxic.
+  molecular_weight_oral:
+    pass: {operator: "<=", value: 500, unit: Da}
+    note: Lipinski-style early oral-drug screen; not a universal modality limit.
+  hba_oral:
+    pass: {operator: "<=", value: 10, unit: count}
+  hbd_oral:
+    pass: {operator: "<=", value: 5, unit: count}
+  tpsa_oral:
+    pass: {operator: "<=", value: 140, unit: "angstrom^2"}
+  rotatable_bonds_oral:
+    pass: {operator: "<=", value: 10, unit: count}
+  qed_druglike:
+    pass: {operator: ">=", value: 0.5}
+    note: A practical project default, not a formal regulatory cutoff.
+  ld50_low_concern:
+    derived_value: "1000 * molecular_weight_Da * 10^(-LD50_Zhu)"
+    derived_unit: mg/kg
+    pass: {operator: ">", value: 2000, unit: mg/kg}
+    note: >-
+      Converts ADMET-AI's log10(1/(mol/kg)) prediction to mass dose and applies
+      the GHS boundary above Category 4. Use only as a rat acute-oral screen.
+
+moo_objectives:
+  lipophilicity:
+    strategy: target_window
+    recommended_default_window: {minimum: 1.0, maximum: 3.0, unit: log10_ratio}
+    note: >-
+      Lipophilicity is not "more is better." Normalize each direct logP/logD-like
+      estimate, reward a project-configurable window, and avoid overweighting a
+      molecule merely because several models estimate the same endpoint.
+    members:
+      - {model: Admet-AI, property: logP, role: direct_estimate}
+      - {model: Admet-AI, property: Lipophilicity_AstraZeneca, role: direct_estimate}
+      - {model: Admetica, property: lipophilicity, role: direct_estimate}
+      - {model: Admethyst, property: Lipophilicity_AstraZeneca, role: direct_estimate}
+      - {model: BoiledEgg, property: WLogP, role: direct_estimate}
+      - {model: LogPPrepML, property: ML_LogP_NN, role: direct_estimate}
+      - {model: LogPPrepML, property: ML_LogP_Ridge, role: direct_estimate}
+      - {model: ClassicalGSG, property: LogP_MMFF, role: direct_estimate}
+      - {model: ClassicalGSG, property: LogP_CGenFF, role: direct_estimate}
+      - {model: MolProperty, property: logP, role: direct_estimate}
+  solubility:
+    strategy: maximize_after_unit_normalization
+    note: >-
+      Direct logS predictions carry full weight. Hydration free energy is a
+      mechanistic proxy and must carry lower weight because crystal-lattice energy,
+      ionization, pH, temperature, and solid form also control measured solubility.
+    members:
+      - {model: Admet-AI, property: Solubility_AqSolDB, role: direct_logS, transform: identity, weight: 1.0}
+      - {model: Admet-AI, property: HydrationFreeEnergy_FreeSolv, role: hydration_proxy, transform: negate, weight: 0.5}
+      - {model: Admetica, property: solubility, role: direct_logS, transform: identity, weight: 1.0}
+      - {model: Admethyst, property: Solubility_AqSolDB, role: direct_logS, transform: identity, weight: 1.0}
+      - {model: Admethyst, property: HydrationFreeEnergy_FreeSolv, role: hydration_proxy, transform: negate, weight: 0.5}
+      - {model: MolProperty, property: logS, role: direct_logS, transform: identity, weight: 1.0}
+    hydration_relationship: >-
+      More-negative hydration free energy means more favorable transfer from gas to
+      water. Therefore -HydrationFreeEnergy_FreeSolv increases with favorable
+      hydration and is positively associated with solubility, but is not directly
+      proportional to total aqueous solubility.
+
+models:
+  Admet-AI:
+    model_source: ADMET-AI v2; Chemprop models trained on TDC plus RDKit descriptors.
+    source_refs: [admet_ai_metadata, admet_ai_physchem, tdc, tdc_tox]
+    properties:
+      molecular_weight:
+        note: Average molecular weight computed from the submitted structure.
+        origin: RDKit MolWt via ADMET-AI; descriptor, not a learned model.
+        kind: descriptor
+        unit: Da
+        policy: {mode: threshold, profile: molecular_weight_oral}
+      logP:
+        note: Wildman-Crippen octanol/water logP for the submitted structure.
+        origin: RDKit MolLogP via ADMET-AI; descriptor, not a learned model.
+        kind: descriptor
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      hydrogen_bond_acceptors:
+        note: Count of hydrogen-bond acceptor atoms; relates to polarity but is not monotonic solubility.
+        origin: RDKit CalcNumHBA via ADMET-AI.
+        kind: descriptor
+        unit: count
+        related_to: [solubility, permeability]
+        policy: {mode: threshold, profile: hba_oral, excluded_from_moo: non_monotonic_proxy}
+      hydrogen_bond_donors:
+        note: Count of hydrogen-bond donor groups; relates to polarity but is not monotonic solubility.
+        origin: RDKit CalcNumHBD via ADMET-AI.
+        kind: descriptor
+        unit: count
+        related_to: [solubility, permeability]
+        policy: {mode: threshold, profile: hbd_oral, excluded_from_moo: non_monotonic_proxy}
+      Lipinski:
+        note: Number of four Lipinski conditions satisfied, not a probability or violation count.
+        origin: "ADMET-AI RDKit calculation: MW <= 500, logP <= 5, HBA <= 10, HBD <= 5."
+        kind: rule_score
+        unit: rules_satisfied_out_of_4
+        policy: {mode: threshold, pass: {operator: "==", value: 4}}
+      QED:
+        note: Quantitative estimate of drug-likeness combining several descriptors.
+        origin: RDKit QED via ADMET-AI.
+        kind: score
+        unit: unitless_0_to_1
+        policy: {mode: threshold, profile: qed_druglike}
+      stereo_centers:
+        aliases_from_draft: [stero_centers]
+        note: Number of atom stereocenters; complexity and synthesis concern, not intrinsically poor solubility.
+        origin: RDKit CalcNumAtomStereoCenters via ADMET-AI.
+        kind: descriptor
+        unit: count
+        policy: {mode: informational, excluded_from_moo: no_universal_direction}
+      tpsa:
+        note: Topological polar surface area; affects hydration and passive permeability but not solubility monotonically.
+        origin: RDKit CalcTPSA via ADMET-AI.
+        kind: descriptor
+        unit: "angstrom^2"
+        related_to: [solubility, permeability]
+        policy: {mode: threshold, profile: tpsa_oral, excluded_from_moo: non_monotonic_proxy}
+      HIA_Hou:
+        aliases_from_draft: [HIA_HOU]
+        note: Probability of the positive human-intestinal-absorption class.
+        origin: TDC HIA Hou dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability, excluded_from_moo: absorption_not_solubility}
+      Bioavailability_Ma:
+        note: Probability of the positive human oral-bioavailability class.
+        origin: TDC Bioavailability Ma dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability, excluded_from_moo: composite_pk_endpoint}
+      Solubility_AqSolDB:
+        note: Predicted aqueous solubility; larger logS means greater molar solubility.
+        origin: AqSolDB through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: log10_mol_per_liter
+        policy: {mode: moo, objective: solubility, relationship: direct_positive}
+      Lipophilicity_AstraZeneca:
+        note: Learned lipophilicity estimate from AstraZeneca/MoleculeNet data.
+        origin: AstraZeneca lipophilicity dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      HydrationFreeEnergy_FreeSolv:
+        note: Free energy for transfer from gas phase into water; more-negative values mean more favorable hydration.
+        origin: FreeSolv through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: kcal/mol
+        policy: {mode: moo, objective: solubility, relationship: inverse_raw_use_negated_value, weight: 0.5}
+      Caco2_Wang:
+        note: Log effective permeability across a Caco-2 intestinal epithelial cell model; not solubility.
+        origin: Wang Caco-2 dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: log10_1e-6_cm_per_s
+        policy: {mode: context_threshold, excluded_from_moo: permeability_not_solubility}
+      PAMPA_NCATS:
+        note: Probability of the permeable class in an artificial-membrane assay.
+        origin: NCATS PAMPA dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability, excluded_from_moo: permeability_not_lipophilicity}
+      Pgp_Broccatelli:
+        note: Probability of inhibiting the P-glycoprotein efflux transporter.
+        origin: Broccatelli P-gp inhibition dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      BBB_Martins:
+        note: Probability of blood-brain-barrier penetration; desired for CNS drugs and often undesired peripherally.
+        origin: Martins BBB dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold, excluded_from_moo: endpoint_is_program_dependent}
+      PPBR_AZ:
+        note: Predicted fraction of drug bound to human plasma proteins.
+        origin: AstraZeneca PPBR dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: percent
+        related_to: [distribution, free_drug_fraction]
+        policy: {mode: context_threshold, excluded_from_moo: distribution_not_solubility}
+      VDss_Lombardo:
+        note: Apparent steady-state distribution volume normalized by body mass; neither universally high nor low is best.
+        origin: Lombardo human VDss dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: L/kg
+        policy: {mode: context_threshold, excluded_from_moo: distribution_endpoint}
+      Half_Life_Obach:
+        note: Predicted human pharmacokinetic half-life; target window depends on dosing and exposure goals.
+        origin: Obach human PK dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: hour
+        policy: {mode: context_threshold, excluded_from_moo: pk_endpoint_not_lipophilicity}
+      Clearance_Hepatocyte_AZ:
+        note: Intrinsic clearance measured in hepatocytes, which are liver cells; use a project-specific window.
+        origin: AstraZeneca human/rat hepatocyte data through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: uL/min/1e6_cells
+        policy: {mode: context_threshold, excluded_from_moo: too_little_clearance_can_also_be_undesirable}
+      Clearance_Microsome_AZ:
+        note: Intrinsic metabolic clearance in liver microsomal preparations; use a project-specific window.
+        origin: AstraZeneca microsomal data through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: uL/min/mg
+        policy: {mode: context_threshold, excluded_from_moo: too_little_clearance_can_also_be_undesirable}
+      CYP1A2_Veith: &admet_cyp1a2
+        note: Probability that the molecule inhibits human CYP1A2; a drug-drug-interaction liability.
+        origin: Veith/PubChem CYP panel through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      CYP2C19_Veith: &admet_cyp2c19
+        note: Probability that the molecule inhibits human CYP2C19; a drug-drug-interaction liability.
+        origin: Veith/PubChem CYP panel through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      CYP2C9_Veith: &admet_cyp2c9
+        note: Probability that the molecule inhibits human CYP2C9; a drug-drug-interaction liability.
+        origin: Veith/PubChem CYP panel through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      CYP2D6_Veith: &admet_cyp2d6
+        note: Probability that the molecule inhibits human CYP2D6; a drug-drug-interaction liability.
+        origin: Veith/PubChem CYP panel through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      CYP3A4_Veith: &admet_cyp3a4
+        note: Probability that the molecule inhibits human CYP3A4; a drug-drug-interaction liability.
+        origin: Veith/PubChem CYP panel through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      CYP2C9_Substrate_CarbonMangels: &admet_cyp2c9_sub
+        note: Probability that the molecule is a CYP2C9 substrate; substrate status is not intrinsically toxicity.
+        origin: Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold, excluded_from_moo: metabolism_classification}
+      CYP2D6_Substrate_CarbonMangels: &admet_cyp2d6_sub
+        note: Probability that the molecule is a CYP2D6 substrate; interpret with the metabolic plan.
+        origin: Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold, excluded_from_moo: metabolism_classification}
+      CYP3A4_Substrate_CarbonMangels: &admet_cyp3a4_sub
+        note: Probability that the molecule is a CYP3A4 substrate; interpret with the metabolic plan.
+        origin: Carbon-Mangels CYP substrate dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold, excluded_from_moo: metabolism_classification}
+      hERG: &admet_herg
+        note: Probability of blocking the human hERG potassium channel, a cardiac repolarization liability.
+        origin: TDC hERG blocker dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      ClinTox: &admet_clintox
+        note: Probability of the clinically toxic class from ClinTox labels.
+        origin: ClinTox dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      AMES: &admet_ames
+        note: Probability of a positive Ames bacterial-mutagenicity outcome.
+        origin: TDC Ames dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      DILI: &admet_dili
+        note: Probability of drug-induced liver injury.
+        origin: TDC DILI dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      Carcinogens_Lagunin: &admet_carcinogen
+        note: Probability of rodent carcinogenicity.
+        origin: Lagunin carcinogenicity dataset through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      LD50_Zhu: &admet_ld50
+        note: Rat acute oral toxicity expressed as log10 inverse molar lethal dose; larger values mean greater toxicity.
+        origin: Zhu rat acute-toxicity dataset through TDC; ADMET-AI regression model.
+        kind: regression
+        unit: log10_1_over_mol_per_kg
+        policy: {mode: derived_threshold, profile: ld50_low_concern}
+      Skin_Reaction: &admet_skin
+        aliases_from_draft: ["Skin Reaction"]
+        note: Probability of a positive mouse skin-reaction outcome.
+        origin: TDC Skin Reaction dataset; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-AR: &tox_nr_ar
+        note: Probability of androgen-receptor pathway activity in the Tox21 assay.
+        origin: Tox21 NR-AR task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-AR-LBD: &tox_nr_ar_lbd
+        note: Probability of androgen-receptor ligand-binding-domain activity.
+        origin: Tox21 NR-AR-LBD task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-AhR: &tox_nr_ahr
+        note: Probability of aryl-hydrocarbon-receptor pathway activity.
+        origin: Tox21 NR-AhR task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-Aromatase: &tox_nr_aromatase
+        note: Probability of aromatase-pathway activity.
+        origin: Tox21 NR-Aromatase task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-ER: &tox_nr_er
+        note: Probability of full-length estrogen-receptor pathway activity.
+        origin: Tox21 NR-ER task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-ER-LBD: &tox_nr_er_lbd
+        note: Probability of estrogen-receptor ligand-binding-domain activity.
+        origin: Tox21 NR-ER-LBD task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      NR-PPAR-gamma: &tox_nr_ppar
+        note: Probability of PPAR-gamma pathway activity.
+        origin: Tox21 NR-PPAR-gamma task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-ARE: &tox_sr_are
+        note: Probability of antioxidant-response-element stress-pathway activity.
+        origin: Tox21 SR-ARE task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-ATAD5: &tox_sr_atad5
+        note: Probability of ATAD5/DNA-damage stress-response activity.
+        origin: Tox21 SR-ATAD5 task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-HSE: &tox_sr_hse
+        note: Probability of heat-shock-response-element activity.
+        origin: Tox21 SR-HSE task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-MMP: &tox_sr_mmp
+        note: Probability of mitochondrial-membrane-potential disruption.
+        origin: Tox21 SR-MMP task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-p53: &tox_sr_p53
+        note: Probability of p53 stress-response pathway activity.
+        origin: Tox21 SR-p53 task through TDC; ADMET-AI classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+
+  Admetica:
+    model_source: Admetica graph-transformer models trained on the documented ADMET datasets.
+    source_refs: [admetica]
+    properties:
+      caco2:
+        note: Predicted Caco-2 cell permeability; higher permeability is generally favorable but it is not solubility.
+        origin: Wang Caco-2 dataset; Admetica regression model.
+        kind: regression
+        unit: cm/s_as_documented
+        policy: {mode: context_threshold, excluded_from_moo: permeability_not_solubility}
+      solubility:
+        note: Predicted aqueous solubility; larger log mol/L means more soluble.
+        origin: AqSolDB/Sorkun dataset; Admetica regression model.
+        kind: regression
+        unit: log10_mol_per_liter
+        policy: {mode: moo, objective: solubility, relationship: direct_positive}
+      lipophilicity:
+        note: Predicted octanol/water lipophilicity on a logarithmic ratio scale.
+        origin: AstraZeneca/MoleculeNet data; Admetica regression model.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      ppbr:
+        note: Predicted plasma-protein binding rate; distribution endpoint, not solubility.
+        origin: AstraZeneca PPBR data; Admetica regression model.
+        kind: regression
+        unit: percent_or_native_model_scale
+        policy: {mode: context_threshold, excluded_from_moo: distribution_not_solubility}
+      vdss:
+        note: Predicted steady-state volume of distribution.
+        origin: Lombardo human VDss data; Admetica regression model.
+        kind: regression
+        unit: L/kg
+        policy: {mode: context_threshold}
+      cyp1a2-inhibitor:
+        note: Probability of human CYP1A2 inhibition.
+        origin: PubChem CYP panel; Admetica classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      cyp1a2-substrate:
+        note: Probability of CYP1A2 substrate status; not inherently a toxicity endpoint.
+        origin: Admetica CYP substrate model; dataset provenance should be confirmed from the Docker version.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold}
+      cyp2c19-inhibitor:
+        note: Probability of human CYP2C19 inhibition.
+        origin: PubChem CYP panel; Admetica classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      cyp2c19-substrate:
+        note: Probability of CYP2C19 substrate status; interpret in the metabolic context.
+        origin: Admetica CYP substrate model; dataset provenance should be confirmed from the Docker version.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold}
+      cyp2c9-inhibitor:
+        note: Probability of human CYP2C9 inhibition.
+        origin: PubChem CYP panel; Admetica classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      cyp2c9-substrate:
+        note: Probability of CYP2C9 substrate status; interpret in the metabolic context.
+        origin: Admetica CYP substrate model.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold}
+      cyp2d6-inhibitor:
+        note: Probability of human CYP2D6 inhibition.
+        origin: PubChem CYP panel; Admetica classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      cyp2d6-substrate:
+        note: Probability of CYP2D6 substrate status; interpret in the metabolic context.
+        origin: Carbon-Mangels/Zaretzki-style CYP substrate data; Admetica classifier.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold}
+      cl-heap:
+        note: Hepatocyte intrinsic clearance; the output name appears to contain "heap" rather than "hepa" and is preserved.
+        origin: AstraZeneca/Li hepatocyte-clearance data; Admetica regression model.
+        kind: regression
+        unit: uL/min/1e6_cells
+        policy: {mode: context_threshold}
+      cl-micro:
+        note: Microsomal intrinsic clearance; use a project-specific acceptable window.
+        origin: AstraZeneca/Li microsomal-clearance data; Admetica regression model.
+        kind: regression
+        unit: mL/min/g_as_documented
+        policy: {mode: context_threshold}
+      half-life:
+        note: Predicted human half-life; desired range depends on dosing and exposure goals.
+        origin: Obach human PK data; Admetica regression model.
+        kind: regression
+        unit: hour
+        policy: {mode: context_threshold}
+
+  Admethyst:
+    model_source: ADMEThyst feature pipeline; listed values are ADMET-AI-derived rather than independent ADMEThyst endpoints.
+    source_refs: [admethyst, admet_ai_metadata, tdc, tdc_tox]
+    properties:
+      AMES: *admet_ames
+      BBB_Martins:
+        note: ADMET-AI-derived probability of blood-brain-barrier penetration; desirability is program-specific.
+        origin: Martins BBB dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: context_threshold, excluded_from_moo: endpoint_is_program_dependent}
+      Bioavailability_Ma:
+        note: ADMET-AI-derived probability of the positive oral-bioavailability class.
+        origin: Ma bioavailability dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability}
+      CYP1A2_Veith: *admet_cyp1a2
+      CYP2C19_Veith: *admet_cyp2c19
+      CYP2C9_Substrate_CarbonMangels: *admet_cyp2c9_sub
+      CYP2C9_Veith: *admet_cyp2c9
+      CYP2D6_Substrate_CarbonMangels: *admet_cyp2d6_sub
+      CYP2D6_Veith: *admet_cyp2d6
+      CYP3A4_Substrate_CarbonMangels: *admet_cyp3a4_sub
+      CYP3A4_Veith: *admet_cyp3a4
+      Carcinogens_Lagunin: *admet_carcinogen
+      ClinTox: *admet_clintox
+      DILI: *admet_dili
+      HIA_Hou:
+        note: ADMET-AI-derived probability of positive human intestinal absorption.
+        origin: Hou HIA dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability, excluded_from_moo: absorption_not_solubility}
+      NR-AR-LBD: *tox_nr_ar_lbd
+      NR-AR: *tox_nr_ar
+      NR-AhR: *tox_nr_ahr
+      NR-Aromatase: *tox_nr_aromatase
+      NR-ER-LBD: *tox_nr_er_lbd
+      NR-ER: *tox_nr_er
+      NR-PPAR-gamma: *tox_nr_ppar
+      PAMPA_NCATS:
+        note: ADMET-AI-derived probability of artificial-membrane permeability.
+        origin: NCATS PAMPA dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: favorable_probability, excluded_from_moo: permeability_not_lipophilicity}
+      Pgp_Broccatelli:
+        note: ADMET-AI-derived probability of P-glycoprotein inhibition.
+        origin: Broccatelli P-gp dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: classifier_probability
+        unit: probability
+        policy: {mode: threshold, profile: adverse_probability}
+      SR-ARE: *tox_sr_are
+      SR-ATAD5: *tox_sr_atad5
+      SR-HSE: *tox_sr_hse
+      SR-MMP: *tox_sr_mmp
+      SR-p53: *tox_sr_p53
+      Skin_Reaction: *admet_skin
+      hERG: *admet_herg
+      Caco2_Wang:
+        note: ADMET-AI-derived Caco-2 permeability estimate; not a solubility measure.
+        origin: Wang Caco-2 dataset through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: log10_1e-6_cm_per_s
+        policy: {mode: context_threshold, excluded_from_moo: permeability_not_solubility}
+      Clearance_Hepatocyte_AZ:
+        note: ADMET-AI-derived hepatocyte intrinsic clearance.
+        origin: AstraZeneca hepatocyte data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: uL/min/1e6_cells
+        policy: {mode: context_threshold}
+      Clearance_Microsome_AZ:
+        note: ADMET-AI-derived microsomal intrinsic clearance.
+        origin: AstraZeneca microsome data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: uL/min/mg
+        policy: {mode: context_threshold}
+      Half_Life_Obach:
+        note: ADMET-AI-derived human half-life estimate; desired range is program-specific.
+        origin: Obach PK data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: hour
+        policy: {mode: context_threshold, excluded_from_moo: pk_endpoint_not_lipophilicity}
+      HydrationFreeEnergy_FreeSolv:
+        note: ADMET-AI-derived gas-to-water hydration free energy; negate for a favorable-hydration score.
+        origin: FreeSolv through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: kcal/mol
+        policy: {mode: moo, objective: solubility, relationship: inverse_raw_use_negated_value, weight: 0.5}
+      LD50_Zhu: *admet_ld50
+      Lipophilicity_AstraZeneca:
+        note: ADMET-AI-derived learned lipophilicity estimate.
+        origin: AstraZeneca lipophilicity data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      PPBR_AZ:
+        note: ADMET-AI-derived human plasma-protein-binding rate; distribution endpoint, not solubility.
+        origin: AstraZeneca PPBR data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: percent
+        policy: {mode: context_threshold, excluded_from_moo: distribution_not_solubility}
+      Solubility_AqSolDB:
+        note: ADMET-AI-derived aqueous log solubility; larger values mean greater molar solubility.
+        origin: AqSolDB through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: log10_mol_per_liter
+        policy: {mode: moo, objective: solubility, relationship: direct_positive}
+      VDss_Lombardo:
+        note: ADMET-AI-derived human steady-state distribution volume.
+        origin: Lombardo VDss data through TDC, emitted by the ADMEThyst pipeline.
+        kind: regression
+        unit: L/kg
+        policy: {mode: context_threshold}
+
+  KinasePred:
+    model_source: KinasePred Docker output; exact checkpoint and training set are not identified in the source inventory.
+    source_refs: [local_inventory]
+    properties:
+      "Kinase Activity Prediction":
+        note: Predicted kinase activity. Interpretation requires the kinase target, output scale, and positive-class definition.
+        origin: KinasePred model; provenance must be added from the Docker image or model card.
+        kind: model_score_unknown_scale
+        unit: model_native
+        policy: {mode: context_threshold, enabled: false, reason: target_and_scale_required}
+
+  BoiledEgg:
+    model_source: BOILED-Egg passive-permeation model based on WLogP and TPSA.
+    source_refs: [boiled_egg, rdkit]
+    properties:
+      BBB:
+        note: Whether the WLogP/TPSA point lies in the BOILED-Egg brain-penetration region.
+        origin: BOILED-Egg geometric classifier.
+        kind: binary_classification
+        unit: boolean_or_native_label
+        policy: {mode: context_threshold, excluded_from_moo: program_dependent_permeation}
+      GIA:
+        note: Whether the WLogP/TPSA point lies in the high gastrointestinal-absorption region.
+        origin: BOILED-Egg geometric classifier.
+        kind: binary_classification
+        unit: boolean_or_native_label
+        policy: {mode: threshold, pass: {operator: "==", value: true}, excluded_from_moo: absorption_not_solubility}
+      TPSA:
+        note: Topological polar surface area used as a BOILED-Egg coordinate; not a monotonic solubility output.
+        origin: RDKit/BOILED-Egg descriptor calculation.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: threshold, profile: tpsa_oral, excluded_from_moo: classifier_input_and_non_monotonic_proxy}
+      WLogP:
+        note: Wildman-Crippen logP used as the BOILED-Egg lipophilicity coordinate.
+        origin: Wildman-Crippen/RDKit descriptor calculation.
+        kind: descriptor
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+
+  CToxPred:
+    model_source: CToxPred neural classifiers for three cardiac ion-channel liabilities.
+    source_refs: [ctoxpred]
+    native_output_semantics: "0 = non-toxic/non-blocker; 1 = toxic/blocker"
+    properties:
+      hERG:
+        note: Binary prediction of hERG potassium-channel blocking liability.
+        origin: CToxPred hERG fingerprint classifier.
+        kind: binary_classification
+        unit: 0_or_1
+        policy: {mode: threshold, profile: native_nontoxic_binary}
+      Nav1.5:
+        note: Binary prediction of Nav1.5 cardiac sodium-channel blocking liability.
+        origin: CToxPred fingerprint-plus-descriptor classifier.
+        kind: binary_classification
+        unit: 0_or_1
+        policy: {mode: threshold, profile: native_nontoxic_binary}
+      Cav1.2:
+        note: Binary prediction of Cav1.2 L-type calcium-channel blocking liability.
+        origin: CToxPred fingerprint-plus-descriptor classifier.
+        kind: binary_classification
+        unit: 0_or_1
+        policy: {mode: threshold, profile: native_nontoxic_binary}
+
+  LogPPrepML:
+    model_source: LogPPrepML Docker; checkpoint provenance is not identified in the source inventory.
+    source_refs: [local_inventory]
+    properties:
+      ML_LogP_NN:
+        note: Neural-network estimate of octanol/water logP.
+        origin: LogPPrepML neural-network model; training-set citation should be added from its model card.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      ML_LogP_Ridge:
+        note: Ridge-regression estimate of octanol/water logP.
+        origin: LogPPrepML ridge model; training-set citation should be added from its model card.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+
+  PChemCever:
+    model_source: PChemCever Docker outputs corresponding to RDKit-style molecular descriptors.
+    source_refs: [rdkit, local_inventory]
+    group_policy: >-
+      These descriptors may correlate with lipophilicity or solubility and may be
+      model features, but none is a direct monotonic endpoint. They are deliberately
+      excluded from both MOO objectives.
+    properties:
+      PEOE_VSA7:
+        note: Surface area of atoms whose PEOE partial-charge contribution is in [-0.05, 0.00).
+        origin: RDKit MOE-style charge/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      VSA_EState6:
+        note: Sum of electrotopological-state indices for atoms in VSA bin 6.
+        origin: RDKit VSA/EState descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      PEOE_VSA6:
+        note: Surface area of atoms whose PEOE partial-charge contribution is in [-0.10, -0.05).
+        origin: RDKit MOE-style charge/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      MolMR:
+        note: Crippen molar refractivity, reflecting molecular volume and polarizability.
+        origin: RDKit Crippen MolMR descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: not_lipophilicity_itself}
+      BCUT2D_LOGPLOW:
+        note: Low BCUT eigenvalue using atomic Crippen logP contributions on the diagonal.
+        origin: RDKit BCUT2D descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: spectral_feature_not_logp}
+      NumAromaticRings:
+        note: Count of aromatic rings in the molecular graph.
+        origin: RDKit ring descriptor.
+        kind: descriptor
+        unit: count
+        policy: {mode: informational, excluded_from_moo: no_universal_direction}
+      SMR_VSA7:
+        note: Surface area of atoms with molar-refractivity contributions in [3.05, 3.63).
+        origin: RDKit MOE-style refractivity/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      EState_VSA8:
+        note: Surface area of atoms whose electrotopological-state value falls in EState bin 8.
+        origin: RDKit EState/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      SlogP_VSA2:
+        note: Surface area of atoms with Crippen logP contributions in [-0.40, -0.20).
+        origin: RDKit MOE-style logP/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: contribution_bin_not_total_logp}
+      VSA_EState8:
+        note: Sum of electrotopological-state indices for atoms in VSA bin 8.
+        origin: RDKit VSA/EState descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      VSA_EState10:
+        note: Sum of electrotopological-state indices for atoms in VSA bin 10.
+        origin: RDKit VSA/EState descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      BCUT2D_LOGPHI:
+        note: High BCUT eigenvalue using atomic Crippen logP contributions on the diagonal.
+        origin: RDKit BCUT2D descriptor.
+        kind: descriptor
+        unit: descriptor_native
+        policy: {mode: informational, excluded_from_moo: spectral_feature_not_logp}
+      SlogP_VSA10:
+        note: Surface area of atoms with Crippen logP contributions in [0.40, 0.50).
+        origin: RDKit MOE-style logP/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: contribution_bin_not_total_logp}
+      SlogP_VSA5:
+        note: Surface area of atoms with Crippen logP contributions in [0.10, 0.15).
+        origin: RDKit MOE-style logP/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: contribution_bin_not_total_logp}
+      Kappa3:
+        note: Third-order Kier molecular shape index.
+        origin: RDKit graph-shape descriptor.
+        kind: descriptor
+        unit: unitless
+        policy: {mode: informational, excluded_from_moo: shape_feature}
+      fr_Ar_OH:
+        note: Count of aromatic hydroxyl functional groups.
+        origin: RDKit fragment-count descriptor.
+        kind: descriptor
+        unit: count
+        policy: {mode: informational, excluded_from_moo: fragment_feature}
+      EState_VSA1:
+        note: Surface area of atoms whose electrotopological-state value falls in EState bin 1.
+        origin: RDKit EState/VSA descriptor.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: informational, excluded_from_moo: binned_surface_feature}
+      fr_halogen:
+        note: Count of halogen atoms recognized by the RDKit fragment definition.
+        origin: RDKit fragment-count descriptor.
+        kind: descriptor
+        unit: count
+        policy: {mode: informational, excluded_from_moo: fragment_feature}
+
+  CardioTox:
+    model_source: CardioTox Docker; native hERG output currently needs an X-FORGE handler.
+    source_refs: [local_inventory]
+    properties:
+      hERG:
+        note: hERG cardiac-ion-channel liability output; native scale and class encoding are not yet normalized.
+        origin: CardioTox model; exact checkpoint/dataset provenance must be added with its handler.
+        kind: toxicity_output_unknown_scale
+        unit: model_native
+        policy:
+          mode: threshold
+          enabled: false
+          intended_pass: {operator: "==", value: normalized_non_blocker}
+          reason: Do not enforce until the handler proves native scale and positive-class semantics.
+
+  ClassicalGSG:
+    model_source: ClassicalGSG neural logP predictors using force-field atomic attributes and graph scattering.
+    source_refs: [classical_gsg]
+    properties:
+      LogP_MMFF:
+        note: Octanol/water logP predicted from MMFF94-derived atomic attributes.
+        origin: ClassicalGSG MMFF94 pretrained model, trained on OpenChem/PHYSPROP logP data.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      LogP_CGenFF:
+        note: Octanol/water logP predicted from CGenFF-derived atomic attributes.
+        origin: ClassicalGSG CGenFF pretrained model, trained on OpenChem/PHYSPROP logP data.
+        kind: regression
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+
+  MolProperty:
+    model_source: MolProperty Docker; descriptor implementation and learned-model provenance are not identified in the source inventory.
+    source_refs: [local_inventory, rdkit]
+    properties:
+      logP:
+        note: Estimated octanol/water partition coefficient on a log10 scale.
+        origin: MolProperty logP output; confirm the Docker's calculation/model implementation.
+        kind: regression_or_descriptor
+        unit: log10_ratio
+        policy: {mode: moo, objective: lipophilicity, relationship: direct}
+      HBA:
+        note: Hydrogen-bond acceptor count; polarity descriptor, not a monotonic solubility output.
+        origin: MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.
+        kind: descriptor
+        unit: count
+        policy: {mode: threshold, profile: hba_oral, excluded_from_moo: non_monotonic_proxy}
+      HBD:
+        note: Hydrogen-bond donor count; polarity descriptor, not a monotonic solubility output.
+        origin: MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.
+        kind: descriptor
+        unit: count
+        policy: {mode: threshold, profile: hbd_oral, excluded_from_moo: non_monotonic_proxy}
+      TPSA:
+        note: Topological polar surface area; related to hydration and permeability but not solubility monotonically.
+        origin: MolProperty descriptor output; likely toolkit-derived, exact implementation unconfirmed.
+        kind: descriptor
+        unit: "angstrom^2"
+        policy: {mode: threshold, profile: tpsa_oral, excluded_from_moo: non_monotonic_proxy}
+      RotatableBonds:
+        note: Count of rotatable bonds, used as a molecular-flexibility/developability descriptor.
+        origin: MolProperty descriptor output; exact rotatable-bond definition unconfirmed.
+        kind: descriptor
+        unit: count
+        policy: {mode: threshold, profile: rotatable_bonds_oral}
+      pka:
+        note: Predicted acid/base dissociation constant; solubility effects require site, ionization type, pH, and temperature.
+        origin: MolProperty pKa output; model/checkpoint and acid/base convention unconfirmed.
+        kind: regression_unknown_convention
+        unit: pKa
+        policy: {mode: context_threshold, excluded_from_moo: ph_and_site_context_required}
+      logS:
+        note: Predicted logarithmic aqueous solubility; larger values normally mean greater molar solubility.
+        origin: MolProperty logS output; dataset, pH, and temperature convention unconfirmed.
+        kind: regression
+        unit: presumed_log10_mol_per_liter
+        policy: {mode: moo, objective: solubility, relationship: direct_positive, requires_unit_confirmation: true}
+      numRings:
+        note: Number of rings in the molecular graph; structural complexity descriptor with no universal direction.
+        origin: MolProperty ring-count output; exact ring definition unconfirmed.
+        kind: descriptor
+        unit: count
+        policy: {mode: informational, excluded_from_moo: no_universal_direction}
+      ruleOfFive:
+        note: Lipinski Rule-of-Five result; native value may be a boolean, satisfied-rule count, or violation count.
+        origin: MolProperty rule implementation; encoding must be confirmed before gating.
+        kind: rule_result
+        unit: model_native
+        policy: {mode: threshold, enabled: false, reason: native_encoding_required}
+      veberRule:
+        note: Veber oral-bioavailability rule result, generally based on rotatable bonds and polar surface area.
+        origin: MolProperty Veber-rule implementation; native encoding must be confirmed.
+        kind: rule_result
+        unit: model_native
+        policy: {mode: threshold, enabled: false, reason: native_encoding_required}
+      chemicalFormula:
+        note: Molecular formula derived from the submitted structure.
+        origin: MolProperty structure toolkit.
+        kind: identifier
+        unit: text
+        policy: {mode: informational}
+      molecularMass:
+        note: Molecular mass derived from the submitted structure; confirm average versus monoisotopic convention.
+        origin: MolProperty structure toolkit.
+        kind: descriptor
+        unit: Da
+        policy: {mode: threshold, profile: molecular_weight_oral, requires_mass_convention_confirmation: true}
+      smiles:
+        note: SMILES representation returned for identity/traceability, not an optimizable property.
+        origin: MolProperty input echo or canonicalization step; canonicalization convention unconfirmed.
+        kind: identifier
+        unit: text
+        policy: {mode: informational}
