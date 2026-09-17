@@ -365,7 +365,7 @@ def calculate_predictions(
 def find_pareto_front(predictions: pd.DataFrame) -> pd.DataFrame:
     """Return compounds not dominated under the two aggregate objectives.
 
-    Lipophilicity is minimized and solubility is maximized.  A compound is
+    Lipophilicity and solubility are maximized.  A compound is
     dominated when another compound is no worse on both scores and strictly
     better on at least one.  Equal-score compounds therefore remain on the
     front.
@@ -375,10 +375,10 @@ def find_pareto_front(predictions: pd.DataFrame) -> pd.DataFrame:
     is_pareto = np.ones(len(predictions), dtype=bool)
 
     for index in range(len(predictions)):
-        at_least_as_good = (lipophilicity <= lipophilicity[index]) & (
+        at_least_as_good = (lipophilicity >= lipophilicity[index]) & (
             solubility >= solubility[index]
         )
-        strictly_better = (lipophilicity < lipophilicity[index]) | (
+        strictly_better = (lipophilicity > lipophilicity[index]) | (
             solubility > solubility[index]
         )
         if np.any(at_least_as_good & strictly_better):
@@ -447,7 +447,7 @@ def plot_pareto_front(
                         fontsize=8,
                     )
 
-            axis.set_xlabel("Lipophilicity score (lower is better)")
+            axis.set_xlabel("Lipophilicity score (higher is better)")
             axis.set_ylabel("Solubility score (higher is better)")
             axis.set_title("Aggregate Lipophilicity–Solubility Pareto Front")
             axis.grid(alpha=0.2)
