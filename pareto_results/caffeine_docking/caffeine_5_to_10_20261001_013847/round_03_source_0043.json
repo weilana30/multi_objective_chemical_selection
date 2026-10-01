@@ -1,0 +1,665 @@
+{
+  "settings": {
+    "source_mode": "existing_smiles",
+    "source_smiles": "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "requested_source_molecules": 1,
+    "generated_source_molecules": 1,
+    "samples_per_mask": 1,
+    "min_mask_tokens": 5,
+    "max_mask_tokens": 10,
+    "temperature": 0.8,
+    "randomness": 0.5,
+    "gamma": 0.0
+  },
+  "source_molecules": [
+    {
+      "source_index": 0,
+      "source_smiles": "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+      "source_safe": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+      "fragment_count": 9,
+      "fragments": [
+        {
+          "fragment_index": 0,
+          "source_fragment": "n13c(=O)n4c(=O)c2c1ncn28",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "[MASK]x5.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "C[C@@H](CCCO)CN1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "[MASK]x6.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "C[C@@H](CCCO)CCN1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "[MASK]x7.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "C[C@H](CCCO)C(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "[MASK]x8.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "OCCCCN1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "[MASK]x9.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CN(C)CCN1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "[MASK]x10.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=CCc1ccc(N2CCOCC2)cn1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 1,
+          "source_fragment": "N1%10CCOCC1",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x5.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)CCCO"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x6.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(C2CC2)c(=O)c2c1ncn2CC=O"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x7.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CC(F)F)c(=O)c2c1ncn2CC=O"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x8.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n2c(=O)c3c1ncn3CC(=O)NCC2"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x9.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=CCn1cnc2c1c(=O)n(CCCO)c(=O)n2C(F)(F)F"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.[MASK]x10.C9%10=O.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n2c(=O)c3c1ncn3CC(=O)c1ccc-2cc1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 2,
+          "source_fragment": "C9%10=O",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x5.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x6.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(F)F"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x7.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)O"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x8.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1cnc2c1c(=O)n(CCCO)c(=O)n2C"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x9.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1cnc2c1c(=O)n(CCCO)c(=O)n2C"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.[MASK]x10.C45.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2Cc1ccc(N2CCOCC2)cc1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 3,
+          "source_fragment": "C45",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x5.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x6.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(NC(=O)CCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x7.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x8.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x9.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.[MASK]x10.C56.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 4,
+          "source_fragment": "C56",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x5.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x6.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCC(=O)CO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x7.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCC(=O)CO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x8.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CC[C@@H](O)CCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x9.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCCOCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.[MASK]x10.C67.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(Cc2ccc(CO)cc2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 5,
+          "source_fragment": "C67",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x5.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCCCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x6.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCC2CC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x7.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCC2CCC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x8.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCc2cccs2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x9.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCc2cccnc2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.[MASK]x10.C89.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1cnc2c1c(=O)n(CCc1ccccc1C(=O)N1CCOCC1)c(=O)n2C"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 6,
+          "source_fragment": "C89",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x5.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2OC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x6.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCO)c(=O)c2[nH]cnc21"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x7.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCC2CCC2)c(=O)c2[nH]cnc21"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x8.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCc2ccco2)c(=O)c2[nH]cnc21"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x9.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCc2cccnc2)c(=O)c2[nH]cnc21"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.[MASK]x10.C3.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCc2ccccc2C(=O)N2CCOCC2)c(=O)c2[nH]cnc21"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 7,
+          "source_fragment": "C3",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x5.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=C(Cn1cnc2[nH]c(=O)n(CCCO)c(=O)c21)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x6.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=C(Cn1cnc2[nH]c(=O)n(CCCO)c(=O)c21)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x7.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCC(=O)CCCn1c(=O)[nH]c2ncn(CC(=O)N3CCOCC3)c2c1=O"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x8.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=C(Cn1cnc2[nH]c(=O)n(CCCO)c(=O)c21)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x9.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=C(Cn1cnc2[nH]c(=O)n(CCCO)c(=O)c21)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.[MASK]x10.O7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "O=C(Cn1cnc2[nH]c(=O)n(CCCc3ccccc3)c(=O)c21)N1CCOCC1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 8,
+          "source_fragment": "O7",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x5",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O"
+              ]
+            },
+            {
+              "mask_token_count": 6,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x6",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O"
+              ]
+            },
+            {
+              "mask_token_count": 7,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x7",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O"
+              ]
+            },
+            {
+              "mask_token_count": 8,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x8",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCC2CCCC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 9,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x9",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(CCCC(F)(F)F)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+              ]
+            },
+            {
+              "mask_token_count": 10,
+              "masked_safe_template": "n13c(=O)n4c(=O)c2c1ncn28.N1%10CCOCC1.C9%10=O.C45.C56.C67.C89.C3.[MASK]x10",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "CCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "total_valid_samples_before_deduplication": 54,
+  "total_unique_generated_molecules": 43,
+  "all_unique_generated_variants": [
+    "C[C@@H](CCCO)CN1CCOCC1",
+    "C[C@@H](CCCO)CCN1CCOCC1",
+    "C[C@H](CCCO)C(=O)N1CCOCC1",
+    "OCCCCN1CCOCC1",
+    "CN(C)CCN1CCOCC1",
+    "O=CCc1ccc(N2CCOCC2)cn1",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)CCCO",
+    "Cn1c(=O)n(C2CC2)c(=O)c2c1ncn2CC=O",
+    "Cn1c(=O)n(CC(F)F)c(=O)c2c1ncn2CC=O",
+    "Cn1c(=O)n2c(=O)c3c1ncn3CC(=O)NCC2",
+    "O=CCn1cnc2c1c(=O)n(CCCO)c(=O)n2C(F)(F)F",
+    "Cn1c(=O)n2c(=O)c3c1ncn3CC(=O)c1ccc-2cc1",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(F)F",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2CC(=O)O",
+    "Cn1cnc2c1c(=O)n(CCCO)c(=O)n2C",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2Cc1ccc(N2CCOCC2)cc1",
+    "Cn1c(=O)[nH]c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(NC(=O)CCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCCCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCC(=O)CO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCC(=O)CO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CC[C@@H](O)CCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCCOCO)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(Cc2ccc(CO)cc2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "CCCCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O",
+    "Cn1c(=O)n(CCC2CC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCC2CCC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCc2cccs2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCc2cccnc2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1cnc2c1c(=O)n(CCc1ccccc1C(=O)N1CCOCC1)c(=O)n2C",
+    "Cn1c(=O)n(CCCO)c(=O)c2c1ncn2OC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCO)c(=O)c2[nH]cnc21",
+    "Cn1c(=O)n(CCCC2CCC2)c(=O)c2[nH]cnc21",
+    "Cn1c(=O)n(CCCc2ccco2)c(=O)c2[nH]cnc21",
+    "Cn1c(=O)n(CCCc2cccnc2)c(=O)c2[nH]cnc21",
+    "Cn1c(=O)n(CCCc2ccccc2C(=O)N2CCOCC2)c(=O)c2[nH]cnc21",
+    "O=C(Cn1cnc2[nH]c(=O)n(CCCO)c(=O)c21)N1CCOCC1",
+    "CCC(=O)CCCn1c(=O)[nH]c2ncn(CC(=O)N3CCOCC3)c2c1=O",
+    "O=C(Cn1cnc2[nH]c(=O)n(CCCc3ccccc3)c(=O)c21)N1CCOCC1",
+    "CCCn1c(=O)c2c(ncn2CC(=O)N2CCOCC2)n(C)c1=O",
+    "Cn1c(=O)n(CCCC2CCCC2)c(=O)c2c1ncn2CC(=O)N1CCOCC1",
+    "Cn1c(=O)n(CCCC(F)(F)F)c(=O)c2c1ncn2CC(=O)N1CCOCC1"
+  ]
+}
