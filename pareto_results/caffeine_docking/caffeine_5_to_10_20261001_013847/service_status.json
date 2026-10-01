@@ -1,0 +1,207 @@
+{
+  "active_constraints": [
+    {
+      "model": "Admet-AI",
+      "name": "molecular_weight_oral",
+      "operator": "<=",
+      "property": "molecular_weight",
+      "source": "property_output_registry.json:molecular_weight_oral",
+      "unit": "Da",
+      "value": 500.0
+    },
+    {
+      "model": "Admet-AI",
+      "name": "hba_oral",
+      "operator": "<=",
+      "property": "hydrogen_bond_acceptors",
+      "source": "property_output_registry.json:hba_oral",
+      "unit": "count",
+      "value": 10.0
+    },
+    {
+      "model": "Admet-AI",
+      "name": "hbd_oral",
+      "operator": "<=",
+      "property": "hydrogen_bond_donors",
+      "source": "property_output_registry.json:hbd_oral",
+      "unit": "count",
+      "value": 5.0
+    },
+    {
+      "model": "Admet-AI",
+      "name": "tpsa_oral",
+      "operator": "<=",
+      "property": "tpsa",
+      "source": "property_output_registry.json:tpsa_oral",
+      "unit": "angstrom^2",
+      "value": 140.0
+    },
+    {
+      "model": "Admet-AI",
+      "name": "lipinski_rule_of_five",
+      "operator": "==",
+      "property": "Lipinski",
+      "source": "property_output_registry.json:Admet-AI.Lipinski",
+      "unit": "rules_satisfied_out_of_4",
+      "value": 4.0
+    },
+    {
+      "model": "Admet-AI",
+      "name": "qed_druglike",
+      "operator": ">=",
+      "property": "QED",
+      "source": "property_output_registry.json:qed_druglike",
+      "unit": "unitless_0_to_1",
+      "value": 0.5
+    },
+    {
+      "model": "Admet-AI",
+      "name": "admet_ai_solubility_screen",
+      "operator": ">=",
+      "property": "Solubility_AqSolDB",
+      "source": "project screening threshold; registry identifies this as a direct solubility objective",
+      "unit": "log10_mol_per_liter",
+      "value": -4.0
+    },
+    {
+      "model": "MolProperty",
+      "name": "molproperty_solubility_screen",
+      "operator": ">=",
+      "property": "logS",
+      "source": "project screening threshold; registry identifies this as a direct solubility objective",
+      "unit": "presumed_log10_mol_per_liter",
+      "value": -4.0
+    }
+  ],
+  "active_objectives": {
+    "lipophilicity": [
+      "Admet-AI:logP",
+      "Admet-AI:Lipophilicity_AstraZeneca",
+      "Admethyst:Lipophilicity_AstraZeneca",
+      "BoiledEgg:WLogP",
+      "ClassicalGSG:LogP_MMFF",
+      "MolProperty:logP"
+    ],
+    "solubility": [
+      "Admet-AI:Solubility_AqSolDB",
+      "Admet-AI:HydrationFreeEnergy_FreeSolv",
+      "Admethyst:Solubility_AqSolDB",
+      "Admethyst:HydrationFreeEnergy_FreeSolv",
+      "MolProperty:logS"
+    ]
+  },
+  "property_services": [
+    {
+      "active_members": [
+        "Admet-AI:logP",
+        "Admet-AI:Lipophilicity_AstraZeneca",
+        "Admet-AI:Solubility_AqSolDB",
+        "Admet-AI:HydrationFreeEnergy_FreeSolv",
+        "Admet-AI:molecular_weight",
+        "Admet-AI:hydrogen_bond_acceptors",
+        "Admet-AI:hydrogen_bond_donors",
+        "Admet-AI:tpsa",
+        "Admet-AI:Lipinski",
+        "Admet-AI:QED",
+        "Admet-AI:Solubility_AqSolDB"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admet-AI",
+      "port": 18019
+    },
+    {
+      "active_members": [],
+      "disabled_members": [
+        {
+          "member": "Admetica:lipophilicity",
+          "reason": "health check failed: HTTPConnectionPool(host='localhost', port=18000): Max retries exceeded with url: /health (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=18000): Failed to establish a new connection: [Errno 61] Connection refused\"))"
+        },
+        {
+          "member": "Admetica:solubility",
+          "reason": "health check failed: HTTPConnectionPool(host='localhost', port=18000): Max retries exceeded with url: /health (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=18000): Failed to establish a new connection: [Errno 61] Connection refused\"))"
+        }
+      ],
+      "health": false,
+      "model": "Admetica",
+      "port": 18000
+    },
+    {
+      "active_members": [
+        "Admethyst:Lipophilicity_AstraZeneca",
+        "Admethyst:Solubility_AqSolDB",
+        "Admethyst:HydrationFreeEnergy_FreeSolv"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admethyst",
+      "port": 18001
+    },
+    {
+      "active_members": [
+        "BoiledEgg:WLogP"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "BoiledEgg",
+      "port": 18002
+    },
+    {
+      "active_members": [
+        "ClassicalGSG:LogP_MMFF"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "ClassicalGSG",
+      "port": 10001
+    },
+    {
+      "active_members": [
+        "MolProperty:logP",
+        "MolProperty:logS",
+        "MolProperty:logS"
+      ],
+      "disabled_members": [
+        {
+          "member": "MolProperty:RotatableBonds",
+          "reason": "MolProperty failed for service probe; requested properties: RotatableBonds; RotatableBonds: Prediction failed for this property"
+        }
+      ],
+      "health": true,
+      "model": "MolProperty",
+      "port": 18003
+    }
+  ],
+  "requested_objectives": {
+    "lipophilicity": [
+      "Admet-AI:logP",
+      "Admet-AI:Lipophilicity_AstraZeneca",
+      "Admetica:lipophilicity",
+      "Admethyst:Lipophilicity_AstraZeneca",
+      "BoiledEgg:WLogP",
+      "ClassicalGSG:LogP_MMFF",
+      "MolProperty:logP"
+    ],
+    "solubility": [
+      "Admet-AI:Solubility_AqSolDB",
+      "Admet-AI:HydrationFreeEnergy_FreeSolv",
+      "Admetica:solubility",
+      "Admethyst:Solubility_AqSolDB",
+      "Admethyst:HydrationFreeEnergy_FreeSolv",
+      "MolProperty:logS"
+    ]
+  },
+  "vina": {
+    "exhaustiveness": 8,
+    "health": {
+      "receptors": [
+        "A2A_3RFM"
+      ],
+      "service": "autodock-vina",
+      "status": "healthy"
+    },
+    "poses": 5,
+    "receptor": "A2A_3RFM",
+    "url": "http://localhost:18025"
+  }
+}

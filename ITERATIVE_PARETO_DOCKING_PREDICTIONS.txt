@@ -1,0 +1,259 @@
+ITERATIVE PARETO DOCKING WORKFLOW: PREDICTION GUIDE
+====================================================
+
+Purpose
+-------
+This file lists every model prediction used by
+iterative_pareto_docking.py, what the prediction means in this workflow, and
+whether it is an optimization objective or a screening gate.
+
+The workflow starts with a SMILES string, asks GenMol for candidate SMILES,
+queries the property microservices, docks candidates that pass the property
+gates, calculates three aggregate objective values, selects the
+non-dominated (Pareto-front) candidates, and optionally sends those molecules
+back through GenMol for the next round.
+
+Important distinction
+---------------------
+An objective contributes to a score used to rank the Pareto front. A screening
+constraint is a pass/fail filter. A candidate rejected by a screening
+constraint is not included in the scored table or Pareto front. Property gates
+are applied before docking when possible; the docking gate is applied after
+Vina returns a result.
+
+
+1. GenMol output
+----------------
+
+Prediction/output: generated SMILES strings
+Source: GenMol remask_generated_molecule.py
+Use: These strings are candidate molecules. GenMol is not itself one of the
+three optimization objectives. Invalid or duplicate strings are removed before
+property scoring. Pareto-front SMILES are used as the source molecules for the
+next round.
+
+
+2. Lipophilicity objective members
+----------------------------------
+
+For each working member below, the returned numeric value is multiplied by its
+registry weight (currently 1.0) and added to lipophilicity_score. The current
+workflow maximizes this raw sum. It does not normalize the different model
+outputs before summing them.
+
+Model/property: Admet-AI:logP
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: Admet-AI:Lipophilicity_AstraZeneca
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: Admethyst:Lipophilicity_AstraZeneca
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: BoiledEgg:WLogP
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: ClassicalGSG:LogP_MMFF
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: MolProperty:logP
+Role: lipophilicity objective member
+Transform: identity
+Weight: 1.0
+
+Aggregate:
+lipophilicity_score = the sum of all active lipophilicity members above.
+
+The registry describes a logP/lipophilicity target window of approximately
+1.0 to 3.0 for several of these models. That window is informational in this
+workflow, not a hard gate, because caffeine and close starting molecules can
+fall below 1.0. The workflow therefore does not reject a molecule merely
+because its lipophilicity prediction is outside 1.0 to 3.0.
+
+
+3. Solubility objective members
+-------------------------------
+
+Direct solubility predictions are added as returned. Hydration free energy is
+negated first because a less-negative/more favorable value must be represented
+as a larger number for the maximization objective. The registry gives the
+hydration members weight 0.5.
+
+Model/property: Admet-AI:Solubility_AqSolDB
+Role: solubility objective member and solubility screening gate
+Transform for objective: identity
+Weight for objective: 1.0
+Screening rule: value >= -4.0 by default (controlled by
+--min-solubility-log-s)
+
+Model/property: Admet-AI:HydrationFreeEnergy_FreeSolv
+Role: solubility objective member
+Transform: negate the returned value
+Weight: 0.5
+
+Model/property: Admethyst:Solubility_AqSolDB
+Role: solubility objective member
+Transform: identity
+Weight: 1.0
+
+Model/property: Admethyst:HydrationFreeEnergy_FreeSolv
+Role: solubility objective member
+Transform: negate the returned value
+Weight: 0.5
+
+Model/property: MolProperty:logS
+Role: solubility objective member and solubility screening gate
+Transform for objective: identity
+Weight for objective: 1.0
+Screening rule: value >= -4.0 by default (controlled by
+--min-solubility-log-s)
+
+Aggregate:
+solubility_score = direct ADMET-AI solubility
+                 + 0.5 * negative ADMET-AI hydration free energy
+                 + direct ADMEThyst solubility
+                 + 0.5 * negative ADMEThyst hydration free energy
+                 + direct MolProperty logS,
+using only members whose services pass startup preflight.
+
+The -4.0 logS rule is a provisional project screening threshold. It is not a
+claim that a molecule is experimentally soluble or orally usable. The unit for
+MolProperty logS is treated as log10(mol/L) based on the registry description,
+but should be confirmed against that service's documentation before relying on
+the threshold quantitatively.
+
+
+4. Property and drug-likeness screening predictions
+----------------------------------------------------
+
+These predictions do not contribute to the three aggregate objective scores.
+They are pass/fail filters enabled by default and recorded in
+round_XX_screened.csv.
+
+Model/property: Admet-AI:molecular_weight
+Rule: <= 500 Da
+Reason/source: property_output_registry.json molecular_weight_oral profile
+
+Model/property: Admet-AI:hydrogen_bond_acceptors
+Rule: <= 10
+Reason/source: property_output_registry.json hba_oral profile
+
+Model/property: Admet-AI:hydrogen_bond_donors
+Rule: <= 5
+Reason/source: property_output_registry.json hbd_oral profile
+
+Model/property: Admet-AI:tpsa
+Rule: <= 140 Angstrom^2
+Reason/source: property_output_registry.json tpsa_oral profile
+
+Model/property: Admet-AI:Lipinski
+Rule: == 4 rules satisfied out of 4
+Reason/source: property_output_registry.json Admet-AI Lipinski entry
+
+Model/property: Admet-AI:QED
+Rule: >= 0.5
+Reason/source: property_output_registry.json qed_druglike profile
+
+Model/property: MolProperty:RotatableBonds
+Rule: <= 10
+Reason/source: property_output_registry.json rotatable_bonds_oral profile
+Availability: automatically skipped if the MolProperty service does not
+support this property; the run records the disabled property in
+service_status.json.
+
+These gates are early computational filters. They are not safety guarantees,
+clinical predictions, or substitutes for experimental validation.
+
+
+5. AutoDock Vina predictions
+----------------------------
+
+Input: candidate SMILES plus the configured receptor name (A2A_3RFM by
+default), docking box and receptor configuration stored by the Vina service.
+
+Prediction: docking_affinity
+Meaning: Vina's best reported binding affinity, normally a negative value in
+kcal/mol. More negative is better under Vina's convention.
+Use: retained as an output column for traceability; not directly maximized.
+
+Prediction: docking_score
+Calculation: docking_score = -docking_affinity
+Use: third optimization objective, maximized alongside lipophilicity_score and
+solubility_score.
+Screening rule: docking_score >= 5.0 by default, equivalent to
+docking_affinity <= -5.0 kcal/mol. Controlled by --min-docking-score.
+
+The Vina pose files and individual pose details are not used as additional
+objectives. They are docking outputs that can be inspected separately.
+
+
+6. Pareto-front decision
+------------------------
+
+A molecule is non-dominated when no other fully screened molecule is at least
+as good in all three columns
+
+  lipophilicity_score, solubility_score, docking_score
+
+and strictly better in at least one. All three columns are maximized. The
+non-dominated rows are written to round_XX_pareto.csv and are sent back to
+GenMol for the next iteration.
+
+
+7. Predictions intentionally not used
+--------------------------------------
+
+Admetica:lipophilicity and Admetica:solubility are requested from the registry
+but are automatically excluded when the service reports that the requested
+model is unavailable. They do not silently contribute a value.
+
+The registry's many toxicity, adverse-event, favorable-event, and other
+classifier probabilities are not currently queried by this workflow. No
+toxicity classifier is being used as a gate at this time.
+
+The registry's 1.0 to 3.0 lipophilicity target windows are not enforced as
+hard constraints for the caffeine-starting workflow, as explained above.
+
+No experimental binding assay, measured solubility, measured logP, or clinical
+safety result is used. Every value here is a computational model prediction.
+
+
+8. Output files
+---------------
+
+round_XX_screened.csv:
+  All candidates with successful property predictions, including candidates
+  rejected by a gate. screening_pass and screening_failures explain the result.
+  Candidates rejected before docking have no docking values.
+
+round_XX_scored.csv:
+  Candidates that passed all enabled gates and have all three aggregate scores.
+
+round_XX_pareto.csv:
+  The non-dominated subset of round_XX_scored.csv.
+
+service_status.json:
+  Startup health/probe results, active objective members, and disabled members
+  or constraints.
+
+workflow_summary.json:
+  Run configuration, active objectives, receptor, and screening constraints.
+
+
+9. Disabling the gates
+----------------------
+
+--no-screening-constraints disables the registry-based property gates, the
+solubility gates, and the docking-score gate. It does not disable the three
+objectives or Vina docking itself.
+
