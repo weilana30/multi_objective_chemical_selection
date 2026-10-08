@@ -1,0 +1,3 @@
+# MolMIM dock-first Pareto (new)
+
+Same iterative workflow as `iterative_dock_pareto`; NVIDIA MolMIM replaces GenMol. It requires a running local NVIDIA NIM MolMIM service (`--molmim-url`, default `http://localhost:8008`) and a seed such as caffeine. Sampling controls: `--molmim-radius`, `--molmim-beam-size`, `--generator-max-output`. NIM `/sampling` accepts up to 10 molecules per seed per request, so the adapter chunks larger requests. Radius provides a direct locality control; model serving is a separate setup cost and needs compatible NVIDIA infrastructure. See [official endpoint docs](https://docs.nvidia.com/nim/bionemo/molmim/latest/endpoints.html).

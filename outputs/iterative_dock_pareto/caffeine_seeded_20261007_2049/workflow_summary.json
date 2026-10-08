@@ -1,0 +1,88 @@
+{
+  "caffeine_docking_score": 5.347,
+  "candidate_filter": "docking_score > caffeine_docking_score",
+  "completed_rounds": [],
+  "iterations_requested": 5,
+  "objectives": {
+    "lipophilicity": "minimize aggregate lipophilicity score",
+    "solubility": "maximize aggregate solubility score"
+  },
+  "pareto_parent_policy": "remask every Pareto-front molecule that passed the caffeine docking cutoff",
+  "property_services": [
+    {
+      "active_members": [
+        "Admet-AI:logP",
+        "Admet-AI:Lipophilicity_AstraZeneca",
+        "Admet-AI:Solubility_AqSolDB",
+        "Admet-AI:HydrationFreeEnergy_FreeSolv"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admet-AI",
+      "port": 18019
+    },
+    {
+      "active_members": [
+        "Admetica:lipophilicity",
+        "Admetica:solubility"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admetica",
+      "port": 8000
+    },
+    {
+      "active_members": [
+        "Admethyst:Lipophilicity_AstraZeneca",
+        "Admethyst:Solubility_AqSolDB",
+        "Admethyst:HydrationFreeEnergy_FreeSolv"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admethyst",
+      "port": 18001
+    },
+    {
+      "active_members": [
+        "BoiledEgg:WLogP"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "BoiledEgg",
+      "port": 18002
+    },
+    {
+      "active_members": [
+        "ClassicalGSG:LogP_MMFF"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "ClassicalGSG",
+      "port": 10001
+    },
+    {
+      "active_members": [
+        "MolProperty:logP",
+        "MolProperty:logS"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "MolProperty",
+      "port": 18003
+    }
+  ],
+  "samples_per_mask": 1,
+  "vina": {
+    "exhaustiveness": 8,
+    "health": {
+      "receptors": [
+        "A2A_3RFM"
+      ],
+      "service": "autodock-vina",
+      "status": "healthy"
+    },
+    "poses": 5,
+    "receptor": "A2A_3RFM",
+    "url": "http://localhost:18025"
+  }
+}
