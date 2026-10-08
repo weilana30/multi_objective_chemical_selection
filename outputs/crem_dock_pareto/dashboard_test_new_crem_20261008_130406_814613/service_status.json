@@ -1,0 +1,104 @@
+{
+  "active_objectives": {
+    "lipophilicity": [
+      "Admet-AI:logP",
+      "Admet-AI:Lipophilicity_AstraZeneca",
+      "Admetica:lipophilicity",
+      "Admethyst:Lipophilicity_AstraZeneca",
+      "BoiledEgg:WLogP",
+      "ClassicalGSG:LogP_MMFF",
+      "MolProperty:logP"
+    ],
+    "solubility": [
+      "Admet-AI:Solubility_AqSolDB",
+      "Admet-AI:HydrationFreeEnergy_FreeSolv",
+      "Admetica:solubility",
+      "Admethyst:Solubility_AqSolDB",
+      "Admethyst:HydrationFreeEnergy_FreeSolv",
+      "MolProperty:logS"
+    ]
+  },
+  "historical_runs_imported": {
+    "docked": 0,
+    "pareto_memberships": 0,
+    "runs": 1,
+    "scored": 0
+  },
+  "property_services": [
+    {
+      "active_members": [
+        "Admet-AI:logP",
+        "Admet-AI:Lipophilicity_AstraZeneca",
+        "Admet-AI:Solubility_AqSolDB",
+        "Admet-AI:HydrationFreeEnergy_FreeSolv"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admet-AI",
+      "port": 18019
+    },
+    {
+      "active_members": [
+        "Admetica:lipophilicity",
+        "Admetica:solubility"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admetica",
+      "port": 8000
+    },
+    {
+      "active_members": [
+        "Admethyst:Lipophilicity_AstraZeneca",
+        "Admethyst:Solubility_AqSolDB",
+        "Admethyst:HydrationFreeEnergy_FreeSolv"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "Admethyst",
+      "port": 18001
+    },
+    {
+      "active_members": [
+        "BoiledEgg:WLogP"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "BoiledEgg",
+      "port": 18002
+    },
+    {
+      "active_members": [
+        "ClassicalGSG:LogP_MMFF"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "ClassicalGSG",
+      "port": 10001
+    },
+    {
+      "active_members": [
+        "MolProperty:logP",
+        "MolProperty:logS"
+      ],
+      "disabled_members": [],
+      "health": true,
+      "model": "MolProperty",
+      "port": 18003
+    }
+  ],
+  "protocol": "53648b01581b9f57e54e771e92cab9813e00bd4d66a9117f7cd6c776c6c9a837",
+  "vina": {
+    "exhaustiveness": 8,
+    "health": {
+      "receptors": [
+        "A2A_3RFM"
+      ],
+      "service": "autodock-vina",
+      "status": "healthy"
+    },
+    "poses": 5,
+    "receptor": "A2A_3RFM",
+    "url": "http://localhost:18025"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "settings": {
+    "source_mode": "existing_smiles",
+    "source_smiles": "Cn1cnc2c1c(=O)n(C1CC1)c(=O)n2C",
+    "requested_source_molecules": 1,
+    "generated_source_molecules": 1,
+    "samples_per_mask": 1,
+    "min_mask_tokens": 5,
+    "max_mask_tokens": 5,
+    "temperature": 0.8,
+    "randomness": 0.5,
+    "gamma": 0.0
+  },
+  "source_molecules": [
+    {
+      "source_index": 0,
+      "source_smiles": "Cn1cnc2c1c(=O)n(C1CC1)c(=O)n2C",
+      "source_safe": "n13cnc2c1c(=O)n4c(=O)n25.C14CC1.C3.C5",
+      "fragment_count": 4,
+      "fragments": [
+        {
+          "fragment_index": 0,
+          "source_fragment": "n13cnc2c1c(=O)n4c(=O)n25",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "[MASK]x5.C14CC1.C3.C5",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "C1CC1"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 1,
+          "source_fragment": "C14CC1",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13cnc2c1c(=O)n4c(=O)n25.[MASK]x5.C3.C5",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)c2c(ncn2C)n(C)c1=O"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 2,
+          "source_fragment": "C3",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13cnc2c1c(=O)n4c(=O)n25.C14CC1.[MASK]x5.C5",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1c(=O)n(C2CC2)c(=O)c2c1ncn2CCCO"
+              ]
+            }
+          ]
+        },
+        {
+          "fragment_index": 3,
+          "source_fragment": "C5",
+          "mask_lengths": [
+            {
+              "mask_token_count": 5,
+              "masked_safe_template": "n13cnc2c1c(=O)n4c(=O)n25.C14CC1.C3.[MASK]x5",
+              "requested_samples": 1,
+              "valid_sample_count": 1,
+              "unique_sample_count": 1,
+              "generated_variants": [
+                "Cn1cnc2c1c(=O)n(C1CC1)c(=O)n2CCCO"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "total_valid_samples_before_deduplication": 4,
+  "total_unique_generated_molecules": 4,
+  "all_unique_generated_variants": [
+    "C1CC1",
+    "Cn1c(=O)c2c(ncn2C)n(C)c1=O",
+    "Cn1c(=O)n(C2CC2)c(=O)c2c1ncn2CCCO",
+    "Cn1cnc2c1c(=O)n(C1CC1)c(=O)n2CCCO"
+  ]
+}

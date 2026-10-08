@@ -329,6 +329,9 @@ def run_remask(
     if args.model_path:
         command += ["--model-path", str(args.model_path)]
     command += ["--device", args.device, "--seed", str(args.seed)]
+    if hasattr(args, "temperature"):
+        command += ["--temperature", str(args.temperature), "--randomness", str(args.randomness),
+                    "--gamma", str(args.gamma)]
     command += [
         "--samples-per-mask",
         str(samples_per_mask),
@@ -849,18 +852,23 @@ def plot_pareto_front(
                 os.environ["MPLCONFIGDIR"] = previous_config_dir
 
 
-def resolve_requested_members() -> dict[str, list[ObjectiveMember]]:
+def resolve_requested_members(
+    selected_names: dict[str, list[str]] | None = None,
+) -> dict[str, list[ObjectiveMember]]:
     available = load_objective_members()
     available_by_name = {
         objective: {member_name(member): member for member in members}
         for objective, members in available.items()
     }
-    selected_names = {
-        "lipophilicity": CURRENT_LIPOPHILICITY_PROPERTIES,
-        "solubility": CURRENT_SOLUBILITY_PROPERTIES,
-    }
+    if selected_names is None:
+        selected_names = {
+            "lipophilicity": CURRENT_LIPOPHILICITY_PROPERTIES,
+            "solubility": CURRENT_SOLUBILITY_PROPERTIES,
+        }
     requested: dict[str, list[ObjectiveMember]] = {}
     for objective, names in selected_names.items():
+        if not names or len(names) != len(set(names)):
+            raise ValueError(f"Select at least one unique {objective} prediction.")
         missing = [name for name in names if name not in available_by_name[objective]]
         if missing:
             raise RuntimeError(

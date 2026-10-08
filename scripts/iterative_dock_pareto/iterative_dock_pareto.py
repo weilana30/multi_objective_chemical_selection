@@ -10,6 +10,7 @@ import math
 import random
 import re
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -26,7 +27,7 @@ import iterative_pareto_docking as legacy
 from aggregate_pareto import member_name
 from molecule_cache import MoleculeCache, canonicalize_smiles
 
-SERVICE_PORTS = {**legacy.SERVICE_DEFAULT_PORTS, "Admetica": 8000}
+SERVICE_PORTS = {**legacy.SERVICE_DEFAULT_PORTS, "Admetica": 8000, "LogPPrepML": None}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -39,6 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model-path", type=Path)
     p.add_argument("--device", default="auto")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--temperature", type=float, default=0.8)
+    p.add_argument("--randomness", type=float, default=0.5)
+    p.add_argument("--gamma", type=float, default=0.0)
     p.add_argument("--samples-per-mask", type=int, default=2, help="Minimum samples per mask in the initial round; the total-budget planner can raise it.")
     p.add_argument("--initial-mask-count", type=int, default=11, help="Maximum mask sizes used initially; the budget planner selects the needed number.")
     p.add_argument("--min-mask-tokens", type=int, default=5)
@@ -55,6 +59,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--vina-poses", type=int, default=5)
     p.add_argument("--service-probe-smiles", default=legacy.CAFFEINE_SMILES)
     p.add_argument("--require-all-services", action="store_true")
+    p.add_argument("--lipophilicity-members", nargs="+", metavar="MODEL:PROPERTY")
+    p.add_argument("--solubility-members", nargs="+", metavar="MODEL:PROPERTY")
     for model, default_port in SERVICE_PORTS.items():
         dest = model.lower().replace("-", "_") + "_port"
         p.add_argument("--" + dest.replace("_", "-"), dest=dest, type=int, default=default_port)
@@ -66,6 +72,58 @@ def write_json(path: Path, payload: Any) -> None:
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     temporary.replace(path)
+
+
+class ProgressReporter:
+    def __init__(self, output_dir: Path, budgets: list[int]):
+        self.path = output_dir / "progress.json"
+        self.budgets = budgets
+        self.started_at = time.time()
+        self.phase_started_at = self.started_at
+        self.timings: list[dict[str, Any]] = []
+        self.round_index = 0
+        self.phase = "preflight"
+        self.completed = 0
+        self.total = 0
+        self.completed_rounds: list[int] = []
+        self.publish()
+
+    def publish(self) -> None:
+        write_json(self.path, {
+            "status": "running", "phase": self.phase, "current_round": self.round_index,
+            "phase_completed": self.completed, "phase_total": self.total,
+            "completed_rounds": self.completed_rounds, "round_budgets": self.budgets,
+            "started_at": self.started_at, "phase_started_at": self.phase_started_at,
+            "updated_at": time.time(), "timings": self.timings,
+        })
+
+    def start(self, phase: str, round_index: int, total: int = 0) -> None:
+        self.phase = phase
+        self.round_index = round_index
+        self.phase_started_at = time.time()
+        self.completed = 0
+        self.total = total
+        self.publish()
+
+    def advance(self, completed: int, total: int | None = None) -> None:
+        self.completed = completed
+        if total is not None:
+            self.total = total
+        self.publish()
+
+    def finish(self) -> None:
+        self.timings.append({
+            "phase": self.phase, "round": self.round_index, "seconds": time.time() - self.phase_started_at,
+            "count": self.completed,
+        })
+        self.publish()
+
+    def end(self, status: str) -> None:
+        self.phase = status
+        self.publish()
+        progress = json.loads(self.path.read_text(encoding="utf-8"))
+        progress["status"] = status
+        write_json(self.path, progress)
 
 
 def round_dir(output_dir: Path, round_index: int) -> Path:
@@ -178,7 +236,7 @@ def write_run_summary_figures(run_dir: Path, summary: dict[str, Any] | None = No
         pareto_path = round_file(run_dir, round_index, "pareto.csv")
         if not pareto_path.is_file():
             continue
-        frame = pd.read_csv(pareto_path)
+        frame = read_csv_or_empty(pareto_path)
         if not {"lipophilicity_score", "solubility_score"} <= set(frame.columns) or frame.empty:
             continue
         frame = frame.sort_values("lipophilicity_score")
@@ -188,7 +246,7 @@ def write_run_summary_figures(run_dir: Path, summary: dict[str, Any] | None = No
 
     global_path = run_dir / "global_pareto.csv"
     if global_path.is_file():
-        final = pd.read_csv(global_path)
+        final = read_csv_or_empty(global_path)
         if {"lipophilicity_score", "solubility_score"} <= set(final.columns) and not final.empty:
             final = final.sort_values("lipophilicity_score")
             front_axis.plot(final["lipophilicity_score"], final["solubility_score"], color="#c0392b", linewidth=2.5, zorder=4, label="Final global front")
@@ -197,7 +255,8 @@ def write_run_summary_figures(run_dir: Path, summary: dict[str, Any] | None = No
     front_axis.set_xlabel("Lipophilicity score (higher is better)")
     front_axis.set_ylabel("Solubility score (higher is better)")
     front_axis.grid(alpha=.18)
-    front_axis.legend(frameon=False, fontsize=8, ncol=2)
+    if front_axis.get_legend_handles_labels()[0]:
+        front_axis.legend(frameon=False, fontsize=8, ncol=2)
 
     round_numbers = [int(item["round"]) for item in rounds if int(item["round"]) in completed]
     run_front_counts = [int(item.get("cumulative_run_pareto_count", 0)) for item in rounds if int(item["round"]) in completed]
@@ -254,7 +313,7 @@ def write_run_summary_figures(run_dir: Path, summary: dict[str, Any] | None = No
     raw_handles, raw_labels = raw_axis.get_legend_handles_labels()
     flow_axis.legend(handles + raw_handles, labels + raw_labels, frameon=False, fontsize=8, ncol=2, loc="upper right")
 
-    final = pd.read_csv(global_path) if global_path.is_file() else pd.DataFrame()
+    final = read_csv_or_empty(global_path) if global_path.is_file() else pd.DataFrame()
     final_smiles = set(final.get("canonical_smiles", pd.Series(dtype=str)).fillna("").astype(str))
     first_round: dict[str, int] = {}
     for round_index in round_numbers:
@@ -360,7 +419,7 @@ def cache_row(entry: dict[str, Any], candidate: dict[str, Any], baseline: float)
     return row
 
 
-def score_properties(compounds: pd.DataFrame, objectives, args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, str]]:
+def score_properties(compounds: pd.DataFrame, objectives, args: argparse.Namespace, progress=None) -> tuple[pd.DataFrame, dict[str, str]]:
     properties_by_model: dict[str, set[str]] = {}
     for members in objectives.values():
         for member in members:
@@ -401,6 +460,8 @@ def score_properties(compounds: pd.DataFrame, objectives, args: argparse.Namespa
                 failures[canonical] = str(exc)
                 print(f"WARNING: property scoring failed for {name}: {exc}", file=sys.stderr, flush=True)
             print(f"Property scoring {position}/{len(compounds)}", flush=True)
+            if progress:
+                progress(position)
     return pd.DataFrame(scored_rows), failures
 
 
@@ -485,6 +546,7 @@ def generate_to_budget(
     seen_smiles: set[str],
     seed: int,
     max_batches: int,
+    progress=None,
 ) -> tuple[dict[str, str], int, int]:
     generated: dict[str, str] = {}
     generated_raw = 0
@@ -514,6 +576,8 @@ def generate_to_budget(
             for variant, key in zip(variants, canonical):
                 if key not in seen_smiles and key not in generated:
                     generated[key] = key
+            if progress:
+                progress.advance(min(len(generated), budget), budget)
         batch_count += 1
         stagnant_batches = stagnant_batches + 1 if len(generated) == before_batch else 0
         if stagnant_batches >= 2:
@@ -674,6 +738,8 @@ def main() -> None:
         parser.error("--candidate-decay must be greater than 0 and less than 1")
     if args.vina_exhaustiveness < 1 or args.vina_poses < 1:
         parser.error("Vina exhaustiveness and poses must be positive")
+    if args.temperature <= 0 or args.randomness < 0 or not 0 <= args.gamma <= 1:
+        parser.error("GenMol temperature must be positive, randomness non-negative, and gamma between 0 and 1")
     candidate_budgets = candidate_budget_schedule(
         args.total_candidate_budget, args.iterations + 1, args.candidate_decay
     )
@@ -682,10 +748,18 @@ def main() -> None:
         stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         args.output_dir = OUTPUT_ROOT / f"caffeine_seeded_{stamp}"
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    write_json(args.output_dir / "workflow_settings.json", {
+        name: str(value) if isinstance(value, Path) else value
+        for name, value in vars(args).items()
+    })
+    progress = ProgressReporter(args.output_dir, candidate_budgets)
     run_id = args.output_dir.name
     cache = MoleculeCache(args.cache_db)
     try:
-        requested = legacy.resolve_requested_members()
+        requested = legacy.resolve_requested_members({
+            "lipophilicity": args.lipophilicity_members or legacy.CURRENT_LIPOPHILICITY_PROPERTIES,
+            "solubility": args.solubility_members or legacy.CURRENT_SOLUBILITY_PROPERTIES,
+        })
         objectives, _, property_status = legacy.check_property_services(args, requested, [])
         vina_status = legacy.check_vina(args)
         protocol = build_protocol(args, objectives)
@@ -723,6 +797,7 @@ def main() -> None:
             "cache_hit": caffeine_cache_hit,
             "filter": "candidate docking_score must be strictly greater than caffeine docking_score",
         })
+        progress.finish()
 
         initial_generation_plan = plan_generation(
             candidate_budgets[0],
@@ -759,6 +834,7 @@ def main() -> None:
             candidates = pd.read_csv(initial_candidates_path)
             print(f"Resuming from {initial_candidates_path}: {len(candidates)} saved candidates.", flush=True)
         else:
+            progress.start("generation", 0, candidate_budgets[0])
             first_generated, initial_batches, initial_generated_raw = generate_to_budget(
                 [args.starting_smiles] if args.starting_smiles else [None],
                 initial_generation_args,
@@ -770,7 +846,9 @@ def main() -> None:
                 set(),
                 args.seed,
                 args.max_generation_batches,
+                progress,
             )
+            progress.finish()
             unique_first = first_generated
             if not unique_first:
                 raise RuntimeError("Initial GenMol run produced no valid molecules")
@@ -818,6 +896,7 @@ def main() -> None:
                     flush=True,
                 )
             dock_rows = []
+            progress.start("docking", round_index, len(candidates))
             with requests.Session() as docking_session:
                 for position, (_, candidate) in enumerate(candidates.iterrows(), 1):
                     row = candidate.to_dict()
@@ -849,6 +928,9 @@ def main() -> None:
                         snapshot.to_csv(current_round_dir / f"round_{round_index:02d}_docked_partial.csv", index=False)
                         snapshot[snapshot["beats_caffeine"] == True].to_csv(current_round_dir / f"round_{round_index:02d}_docking_passed_partial.csv", index=False)
                     print(f"Round {round_index}: docking {position}/{len(candidates)}", flush=True)
+                    progress.advance(position)
+
+            progress.finish()
 
             docked = pd.DataFrame(dock_rows)
             passed = docked[docked["beats_caffeine"] == True].copy()
@@ -857,6 +939,7 @@ def main() -> None:
             for suffix in ("docked_partial", "docking_passed_partial"):
                 (current_round_dir / f"round_{round_index:02d}_{suffix}.csv").unlink(missing_ok=True)
 
+            progress.start("property scoring", round_index, len(passed))
             needs_properties = []
             scored_rows = []
             property_failures = 0
@@ -880,9 +963,14 @@ def main() -> None:
                     cache.mark_candidate(protocol, run_id, round_index, canonical, "property_failed_cache_hit")
                 else:
                     needs_properties.append(row)
+            cached_property_count = len(passed) - len(needs_properties)
+            progress.advance(cached_property_count)
 
             if needs_properties:
-                fresh, errors = score_properties(pd.DataFrame(needs_properties), objectives, args)
+                fresh, errors = score_properties(
+                    pd.DataFrame(needs_properties), objectives, args,
+                    lambda position: progress.advance(cached_property_count + position),
+                )
                 successful = set(fresh["canonical_smiles"].astype(str)) if not fresh.empty else set()
                 for _, row in fresh.iterrows():
                     item = row.to_dict()
@@ -904,6 +992,8 @@ def main() -> None:
                         cache.store(protocol, canonical, str(row["smiles"]), status="property_failed", error=message)
                         cache.mark_candidate(protocol, run_id, round_index, canonical, "property_failed")
                         property_failures += 1
+            progress.advance(len(passed))
+            progress.finish()
 
             scored = pd.DataFrame(scored_rows)
             scored.to_csv(current_round_dir / f"round_{round_index:02d}_property_scored.csv", index=False)
@@ -932,6 +1022,8 @@ def main() -> None:
             }
             summary["rounds"].append(round_summary)
             summary["completed_rounds"].append(round_index)
+            progress.completed_rounds.append(round_index)
+            progress.publish()
             summary["current_round"] = round_index
             summary["status"] = "running"
             update_summary(summary_path, summary)
@@ -971,6 +1063,7 @@ def main() -> None:
             generation_args = generation_args_for_round(
                 args, round_index + 1, int(generation_plan["mask_count"])
             )
+            progress.start("generation", round_index + 1, budget)
             unique_generated, generation_batches, generated_raw = generate_to_budget(
                 parents,
                 generation_args,
@@ -982,7 +1075,9 @@ def main() -> None:
                 run_smiles_seen,
                 args.seed + (round_index + 1) * 100000,
                 args.max_generation_batches,
+                progress,
             )
+            progress.finish()
             selected = select_pool(list(unique_generated.values()), budget, args.seed + round_index + 1)
             write_json(round_dir(args.output_dir, round_index + 1) / f"round_{round_index + 1:02d}_generation_summary.json", {
                 "parents_in_global_run_front": len(pareto),
@@ -1021,6 +1116,10 @@ def main() -> None:
         summary["cache_hits"] = cache_hits
         update_summary(summary_path, summary)
         write_run_summary_figures(args.output_dir, summary)
+        progress.end(summary["status"])
+    except Exception:
+        progress.end("failed")
+        raise
     finally:
         cache.close()
 
