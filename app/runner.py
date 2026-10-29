@@ -154,8 +154,8 @@ def launch(generator: str, smiles: str, budget: int, rounds: int, report_name: s
             command.extend(["--solubility-members", *options["solubility_members"]])
         port_flags = {
             "admet_ai_port": "--admet-ai-port", "admetica_port": "--admetica-port",
-            "admethyst_port": "--admethyst-port", "boiled_egg_port": "--boiled-egg-port",
-            "classical_gsg_port": "--classical-gsg-port", "mol_property_port": "--mol-property-port",
+            "admethyst_port": "--admethyst-port", "boiled_egg_port": "--boiledegg-port",
+            "classical_gsg_port": "--classicalgsg-port", "mol_property_port": "--molproperty-port",
             "logpprepml_port": "--logpprepml-port",
         }
         for key, value in options.items():
