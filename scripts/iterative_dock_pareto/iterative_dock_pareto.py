@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import argparse
-import copy
 import hashlib
+import copy
 import json
 import math
 import random
@@ -414,6 +414,7 @@ def cache_row(entry: dict[str, Any], candidate: dict[str, Any], baseline: float)
         "solubility_score": entry.get("solubility_score"),
         "cache_status": entry.get("status"),
         "cache_hit": True,
+        "result_id": entry.get("result_id"),
         "error": entry.get("error"),
     })
     return row
@@ -520,6 +521,57 @@ def plan_generation(
         "samples_per_mask": samples,
         "expected_valid_candidates": expected,
     }
+
+
+def export_response(session: requests.Session, url: str, destination: Path) -> bool:
+    """Download an artifact atomically; export failures must not invalidate scores."""
+    try:
+        response = session.get(url, timeout=(10, 120))
+        response.raise_for_status()
+        if not response.content:
+            return False
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        temporary = destination.with_suffix(destination.suffix + ".tmp")
+        temporary.write_bytes(response.content)
+        temporary.replace(destination)
+        return True
+    except (requests.RequestException, OSError):
+        return False
+
+
+def export_receptor(session: requests.Session, args: argparse.Namespace, run_dir: Path) -> dict[str, Any]:
+    relative = "receptor.pdb"
+    ok = export_response(
+        session,
+        f"{args.vina_url.rstrip('/')}/receptors/{args.receptor}/structure.pdb",
+        run_dir / relative,
+    )
+    return {"receptor_path": relative if ok else None,
+            "receptor_export_status": "exported" if ok else "unavailable"}
+
+
+def pose_relative_path(canonical: str) -> str:
+    filename = hashlib.sha256(canonical.encode("utf-8")).hexdigest() + ".sdf"
+    return f"poses/{filename}"
+
+
+def export_pose(session: requests.Session, args: argparse.Namespace, run_dir: Path,
+                canonical: str, result_id: str | None) -> tuple[str | None, str]:
+    relative = pose_relative_path(canonical)
+    destination = run_dir / relative
+    try:
+        if destination.is_file() and destination.stat().st_size > 0:
+            return relative, "exported"
+    except OSError:
+        pass
+    if not result_id:
+        return None, "unavailable"
+    ok = export_response(
+        session,
+        f"{args.vina_url.rstrip('/')}/results/{result_id}/ligand.sdf",
+        destination,
+    )
+    return (relative, "exported") if ok else (None, "unavailable")
 
 
 def generation_args_for_round(args: argparse.Namespace, generation_round: int, mask_count: int) -> argparse.Namespace:
@@ -661,6 +713,7 @@ def import_previous_runs(
                     protocol, key, str(row["smiles"]),
                     docking_affinity=row.get("docking_affinity"),
                     docking_score=row.get("docking_score"),
+                    result_id=row.get("result_id"),
                     status="docked",
                 )
                 cache.mark_candidate(protocol, run_id, round_index, key, "docked")
@@ -679,6 +732,7 @@ def import_previous_runs(
                     protocol, key, str(row["smiles"]),
                     docking_affinity=row.get("docking_affinity"),
                     docking_score=row.get("docking_score"),
+                    result_id=row.get("result_id"),
                     lipophilicity_score=row["lipophilicity_score"],
                     solubility_score=row["solubility_score"],
                     status="scored",
@@ -774,6 +828,8 @@ def main() -> None:
             "protocol": protocol,
             "historical_runs_imported": imported,
         }
+        with requests.Session() as export_session:
+            service_record.update(export_receptor(export_session, args, args.output_dir))
         write_json(args.output_dir / "service_status.json", service_record)
 
         caffeine_key = canonicalize_smiles([args.caffeine_smiles], GENMOL_PYTHON)[0]
@@ -795,6 +851,7 @@ def main() -> None:
             "docking_score": baseline,
             "receptor": args.receptor,
             "cache_hit": caffeine_cache_hit,
+            "result_id": caffeine.get("result_id"),
             "filter": "candidate docking_score must be strictly greater than caffeine docking_score",
         })
         progress.finish()
@@ -901,6 +958,7 @@ def main() -> None:
                 for position, (_, candidate) in enumerate(candidates.iterrows(), 1):
                     row = candidate.to_dict()
                     canonical = str(row["canonical_smiles"])
+                    entry = {}
                     cached = cache.get(protocol, canonical)
                     retry_failed = args.retry_failed_cache and cached and cached["status"] == "docking_failed"
                     if cached and cached.get("docking_score") is not None and not retry_failed:
@@ -908,19 +966,42 @@ def main() -> None:
                         cache_hits["docking"] += 1
                         row = cache_row(entry, row, baseline)
                         row["docking_status"] = "cache_hit"
+                        existing_pose = args.output_dir / pose_relative_path(canonical)
+                        has_pose = existing_pose.is_file() and existing_pose.stat().st_size > 0
+                        if not entry.get("result_id") and not has_pose:
+                            try:
+                                export_result = legacy.request_docking(
+                                    docking_session, args, str(row["smiles"]),
+                                    str(row.get("preferred_name", canonical)),
+                                )
+                                entry["result_id"] = export_result.get("result_id")
+                                if entry["result_id"]:
+                                    cache.store(protocol, canonical, str(row["smiles"]),
+                                                result_id=entry["result_id"], status=entry.get("status", "docked"))
+                            except legacy.PredictionFailure as exc:
+                                row["pose_export_error"] = str(exc)
                     elif cached and cached["status"] == "docking_failed" and not args.retry_failed_cache:
                         row.update({"canonical_smiles": canonical, "caffeine_docking_score": baseline, "beats_caffeine": False, "docking_status": "cached_failure", "error": cached.get("error"), "cache_hit": True})
                         cache_hits["failed_skipped"] += 1
                     else:
                         try:
                             result = legacy.request_docking(docking_session, args, str(row["smiles"]), str(row.get("preferred_name", canonical)))
+                            entry = result
                             row.update(result)
                             row.update({"canonical_smiles": canonical, "caffeine_docking_score": baseline, "beats_caffeine": result["docking_score"] > baseline, "docking_status": "docked", "cache_hit": False})
                             cache.store(protocol, canonical, str(row["smiles"]), **result, status="docked")
                         except Exception as exc:
+                            entry = {}
                             row.update({"canonical_smiles": canonical, "caffeine_docking_score": baseline, "beats_caffeine": False, "docking_status": "docking_failed", "error": str(exc), "cache_hit": False})
                             cache.store(protocol, canonical, str(row["smiles"]), status="docking_failed", error=str(exc))
                             print(f"WARNING: docking failed for {row.get('preferred_name', canonical)}: {exc}", file=sys.stderr, flush=True)
+                    if row.get("docking_score") is not None:
+                        pose_path, pose_status = export_pose(
+                            docking_session, args, args.output_dir, canonical,
+                            (entry or {}).get("result_id"),
+                        )
+                        row["pose_path"] = pose_path
+                        row["pose_export_status"] = pose_status
                     cache.mark_candidate(protocol, run_id, round_index, canonical, str(row["docking_status"]))
                     dock_rows.append(row)
                     if position % 10 == 0:

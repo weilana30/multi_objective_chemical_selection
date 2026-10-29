@@ -617,7 +617,12 @@ def request_docking(
         score = float(body.get("docking_score", -affinity))
         if not math.isfinite(affinity) or not math.isfinite(score):
             raise ValueError("docking result was not finite")
-        return {"docking_affinity": affinity, "docking_score": score}
+        result_id = body.get("result_id")
+        return {
+            "docking_affinity": affinity,
+            "docking_score": score,
+            "result_id": str(result_id) if result_id else None,
+        }
     except (requests.RequestException, ValueError, KeyError, TypeError) as exc:
         raise PredictionFailure(
             f"AutoDock Vina failed for {molecule} (SMILES: {smiles}): {exc}"

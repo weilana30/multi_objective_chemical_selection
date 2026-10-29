@@ -67,6 +67,26 @@ def scored_round(run: Path, index: int) -> pd.DataFrame:
     return frame
 
 
+def docked_through(run: Path, index: int) -> pd.DataFrame:
+    """Docking records from every completed round through the requested round."""
+    frames = []
+    next_number = 1
+    for number in available_rounds(run):
+        if number > index:
+            continue
+        frame = read_csv(round_file(run, number, "docked.csv"))
+        if frame.empty:
+            continue
+        frame = frame.copy()
+        if "canonical_smiles" not in frame and "smiles" in frame:
+            frame["canonical_smiles"] = frame["smiles"]
+        frame["round"] = number
+        frame["molecule_number"] = range(next_number, next_number + len(frame))
+        next_number += len(frame)
+        frames.append(frame)
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+
+
 def scored_through(run: Path, index: int | None = None, cutoff: float | None = None) -> pd.DataFrame:
     rounds = [number for number in available_rounds(run)
               if (index is None or number <= index)

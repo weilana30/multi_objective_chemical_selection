@@ -46,6 +46,7 @@ class MoleculeCache:
                 smiles TEXT NOT NULL,
                 docking_affinity REAL,
                 docking_score REAL,
+                result_id TEXT,
                 lipophilicity_score REAL,
                 solubility_score REAL,
                 status TEXT NOT NULL,
@@ -77,6 +78,9 @@ class MoleculeCache:
             );
             """
         )
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(molecules)")}
+        if "result_id" not in columns:
+            self.db.execute("ALTER TABLE molecules ADD COLUMN result_id TEXT")
         self.db.commit()
 
     def get(self, protocol: str, canonical_smiles: str) -> dict[str, Any] | None:
@@ -90,13 +94,14 @@ class MoleculeCache:
         now = datetime.now(timezone.utc).isoformat()
         self.db.execute(
             """INSERT INTO molecules (
-                protocol, canonical_smiles, smiles, docking_affinity, docking_score,
+                protocol, canonical_smiles, smiles, docking_affinity, docking_score, result_id,
                 lipophilicity_score, solubility_score, status, error, first_seen, last_seen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(protocol, canonical_smiles) DO UPDATE SET
                 smiles=excluded.smiles,
                 docking_affinity=COALESCE(excluded.docking_affinity, molecules.docking_affinity),
                 docking_score=COALESCE(excluded.docking_score, molecules.docking_score),
+                result_id=COALESCE(excluded.result_id, molecules.result_id),
                 lipophilicity_score=COALESCE(excluded.lipophilicity_score, molecules.lipophilicity_score),
                 solubility_score=COALESCE(excluded.solubility_score, molecules.solubility_score),
                 status=CASE WHEN excluded.status='scored' THEN 'scored'
@@ -107,7 +112,7 @@ class MoleculeCache:
                 last_seen=excluded.last_seen""",
             (
                 protocol, canonical_smiles, smiles, values.get("docking_affinity"),
-                values.get("docking_score"), values.get("lipophilicity_score"),
+                values.get("docking_score"), values.get("result_id"), values.get("lipophilicity_score"),
                 values.get("solubility_score"), values.get("status", "docked"),
                 values.get("error"), now, now,
             ),

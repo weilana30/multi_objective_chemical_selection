@@ -71,11 +71,17 @@ main { max-width: 1480px; padding: 30px max(5vw, 28px) 80px; margin: auto; }
 .plot-waiting { background: white; border: 1px solid #e3e9ef; border-radius: 14px; padding: 28px; color: #52667d; margin-top: 20px; }
 .plot-waiting:empty { display: none; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 1000; background: #102741a8; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.modal-card { position: relative; background: white; border-radius: 18px; padding: 26px; width: min(500px, 100%); max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px #10274166; }
+.modal-card { position: relative; background: white; border-radius: 18px; padding: 26px; width: min(760px, 100%); max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px #10274166; }
 .close-modal { position: absolute; top: 10px; right: 16px; border: 0; background: transparent; font-size: 2rem; color: #63768b; }
 .modal-card h2 { font-family: Manrope, sans-serif; margin: 5px 0 12px; }
 .smiles-code { display: block; background: #eff4f7; padding: 11px; border-radius: 8px; overflow-wrap: anywhere; }
 .molecule-image { width: 100%; height: 230px; object-fit: contain; }
+.viewer-shell { margin: 14px 0 7px; position: relative; }
+#molecule-3d-viewer { width: 100%; height: clamp(250px, 42vh, 420px); border: 1px solid #e1e8ee; border-radius: 12px; overflow: hidden; }
+.viewer-status { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; color: #64768b; pointer-events: none; }
+.viewer-controls { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 16px; }
+.viewer-control { border: 1px solid #dce5eb; background: #f6f9fb; color: #36526b; border-radius: 7px; padding: 7px 11px; font-size: .8rem; font-weight: 600; }
+.viewer-fallback { background: #f5f7fa; border-radius: 8px; color: #64768b; padding: 12px; }
 .molecule-values { display: grid; gap: 8px; }
 .molecule-values div { display: flex; justify-content: space-between; border-bottom: 1px solid #e9eef3; padding: 8px 0; }
 @media (max-width: 900px) { .landing-grid, .plots-grid, .settings-grid { grid-template-columns: 1fr; } .status-panel { grid-template-columns: repeat(2, 1fr); } }

@@ -6,6 +6,7 @@ import base64
 import json
 import math
 from pathlib import Path
+from urllib.parse import quote
 
 import dash
 import plotly.graph_objects as go
@@ -15,12 +16,53 @@ from rdkit.Chem.Draw import rdMolDraw2D
 
 from advanced import CHOICES, CREM_DB, NUMBERS, PORTS, TEXT, model_options, normalize as normalize_advanced
 from figures import round_views
-from reports import (available_rounds, discover_reports, read_csv,
-                     read_json, round_file, scored_through)
+from reports import (available_rounds, discover_reports, docked_through,
+                     read_json, scored_through, ROOTS)
 from runner import active_run, etas, launch, preflight, run_status, stop
 
 app = dash.Dash(__name__, title="Molecule search", suppress_callback_exceptions=True)
 server = app.server
+
+
+@server.get("/vendor/3Dmol-min.js")
+def vendor_3dmol():
+    """Serve the pinned viewer bundle without loading it on every dashboard page."""
+    from flask import send_file
+
+    bundle = Path(__file__).resolve().parent / "vendor" / "3Dmol-min.js"
+    if not bundle.is_file():
+        from flask import abort
+        abort(404)
+    return send_file(bundle, mimetype="text/javascript", conditional=True, max_age=86400)
+
+
+@server.get("/report-file")
+def report_file():
+    """Serve only pose/receptor files contained in a managed report folder."""
+    from flask import abort, request, send_file
+
+    report_arg, relative_arg = request.args.get("report", ""), request.args.get("file", "")
+    if not report_arg or not relative_arg:
+        abort(404)
+    report = Path(report_arg).resolve()
+    allowed = False
+    for root in ROOTS.values():
+        try:
+            report.relative_to(root.resolve())
+            allowed = report.is_dir()
+        except ValueError:
+            continue
+        if allowed:
+            break
+    candidate = (report / relative_arg).resolve()
+    try:
+        candidate.relative_to(report)
+    except ValueError:
+        abort(404)
+    if not allowed or not candidate.is_file() or candidate.suffix.lower() not in {".sdf", ".pdb"}:
+        abort(404)
+    return send_file(candidate, mimetype="chemical/x-mdl-sdfile" if candidate.suffix.lower() == ".sdf"
+                     else "chemical/x-pdb", conditional=True)
 
 
 def card(label, component, help_text=None):
@@ -503,7 +545,7 @@ def molecule_details(selected, path, tab, modal_open):
     docked = None
     if tab == "current" or (tab and tab.startswith("round-")):
         index = max(available_rounds(run), default=-1) if tab == "current" else int(tab.split("-")[1])
-        docked = read_csv(round_file(run, index, "docked.csv"))
+        docked = docked_through(run, index)
         scored = scored_through(run, index)
     else:
         return "", {"display": "none"}
@@ -528,6 +570,28 @@ def molecule_details(selected, path, tab, modal_open):
     if picture:
         details.append(html.Img(src=picture, alt="2D molecular structure", className="molecule-image"))
         details.append(html.Small("2D drawing from the SMILES; this is not a docked 3D pose.", className="caption"))
+    pose_path = row.get("pose_path") if row is not None else None
+    pose_path = str(pose_path) if pose_path is not None and str(pose_path).strip() not in ("", "nan", "None") else None
+    summary = read_json(run / "workflow_summary.json")
+    workflow = read_json(run / "workflow_settings.json")
+    service = read_json(run / "service_status.json")
+    receptor_path = (service.get("receptor_path") or summary.get("receptor_path")
+                     or workflow.get("receptor_path"))
+    if pose_path and receptor_path:
+        pose_url = f"/report-file?report={quote(str(run), safe='')}&file={quote(pose_path, safe='/')}"
+        receptor_url = f"/report-file?report={quote(str(run), safe='')}&file={quote(str(receptor_path), safe='/')}"
+        details.extend([
+            html.Div([html.Div(id="molecule-3d-viewer", **{"data-pose-url": pose_url,
+                         "data-receptor-url": receptor_url}),
+                      html.Div("Loading docked pose…", id="molecule-3d-status", className="viewer-status")],
+                     className="viewer-shell"),
+            html.Div([html.Button("Reset view", id="viewer-reset", className="viewer-control"),
+                      html.Button("Hide receptor", id="viewer-toggle-receptor", className="viewer-control",
+                                  **{"data-visible": "true"})], className="viewer-controls"),
+        ])
+    else:
+        details.append(html.P("A saved docked 3D pose is not available for this molecule.",
+                              className="viewer-fallback"))
     details.append(html.Div([
         html.Div([html.Span("Docking"), html.Strong(value(row, "docking_score"))]),
         html.Div([html.Span("Lipophilicity"), html.Strong(value(score_row, "lipophilicity_score"))]),
